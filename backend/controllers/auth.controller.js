@@ -1,0 +1,190 @@
+import User from "../models/user.model.js";
+import { generateTokenAndSetCookie } from "../utils/generateToken.setCookie.js";
+import nodemailer from "nodemailer";
+
+import bcryptjs from "bcryptjs";
+import crypto from "crypto";
+
+export const register = async (req, res) => {
+  const { surname, username, email, password, role, gender } = req.body;
+
+  try {
+    if (!surname || !username || !email || !password || !role) {
+      return res.status(400).json({ message: "Талбар дутуу байна" });
+    }
+    const alreadyExists = await User.findOne({ email });
+    if (alreadyExists) {
+      return res.status(400).json({ message: "Бүртгэлтэй хэрэглэгч" });
+    }
+    if (password.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Нууц үг багадаа 6 оронтой байна" });
+    }
+
+    const hashedPassword = await bcryptjs.hash(password, 10);
+
+    const user = new User({
+      surname,
+      username,
+      email,
+      password: hashedPassword,
+      role,
+      gender,
+    });
+
+    await user.save();
+
+    res.status(201).json({ message: "Хэрэглэгч амжилттай үүсгэлээ" });
+  } catch (error) {
+    console.error("алдаа гарлаа", error);
+  }
+};
+export const login = async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "Хэрэглэгч олдсонгүй" });
+    }
+
+    const isValidPassword = await bcryptjs.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(400).json({ message: "Буруу нууц үг" });
+    }
+
+    // JWT cookie үүсгэх
+    generateTokenAndSetCookie(res, user._id);
+    const profileComplete = user.profileCompleted;
+
+    // Role шалгах
+    switch (user.role) {
+      case "admin":
+        return res.status(200).json({
+          role: user.role,
+          profileComplete: true,
+          message: "Админ",
+        });
+      case "trainer":
+        return res.status(200).json({
+          role: user.role,
+          profileComplete,
+          message: profileComplete ? "Дасгалжуулагч" : "Шинэ дасгалжуулагч",
+        });
+      case "user": // member
+        return res.status(200).json({
+          role: user.role,
+          profileComplete,
+          message: profileComplete ? "Хэрэглэгч" : "Шинэ хэрэглэгч",
+        });
+      default:
+        return res.status(400).json({ message: "Invalid role" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const logout = async (req, res) => {
+  res.clearCookie("token");
+  try {
+    res.status(200).json({ success: true, message: "Амжилттай гарлаа" });
+  } catch (error) {
+    console.error("Error in logout controller:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) return res.status(404).json({ message: "Email олдсонгүй" });
+
+    const token = crypto.randomBytes(32).toString("hex");
+    user.resetToken = token;
+    user.resetTokenExpiry = Date.now() + 3600000; // 1 hour
+    await user.save();
+
+    const resetLink = `http://localhost:5173/reset-password/${user._id}/${token}`;
+
+    var transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.Node_mailer_user, // your email
+        pass: process.env.Node_mailer_pass, // your email password
+      },
+    });
+
+    var mailOptions = {
+      from: "Smart Gym ",
+      to: user.email,
+      subject: "🔐 Нууц үг сэргээх линк",
+      html: `
+    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; color: #333;">
+      <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+        <h2 style="color: #4CAF50;">Нууц үг сэргээх хүсэлт</h2>
+        <p>Сайн байна уу?</p>
+        <p>Та нууц үгээ мартсан тул доорх товчлуур дээр дарж дахин тохируулах боломжтой.</p>
+        <a href="${resetLink}" 
+           style="display: inline-block; background-color: #4CAF50; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; margin-top: 20px;">
+          Нууц үг сэргээх
+        </a>
+        <p style="margin-top: 30px; font-size: 12px; color: #888;">
+          Хэрвээ та ийм хүсэлт илгээж байгаагүй бол энэхүү имэйлийг үл тоогоорой.
+        </p>
+      </div>
+    </div>
+  `,
+    };
+
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        console.log(error);
+      } else {
+        return res.send({ Status: "Амжилттай" });
+      }
+    });
+
+    res.json({ message: "Reset link ийг Email руу явуулсан" });
+  } catch (error) {
+    console.error("Error in forgotPassword controller:", error.message);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+export const resetPassword = async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  try {
+    const user = await User.findOne({
+      resetToken: token,
+      resetTokenExpiry: { $gt: Date.now() },
+    });
+
+    if (!user)
+      return res.status(400).json({ message: "Invalid or expired token" });
+    const hashedPassword = await bcryptjs.hash(password, 10);
+    user.password = hashedPassword;
+    user.resetToken = undefined;
+    user.resetTokenExpiry = undefined;
+    await user.save();
+
+    res.json({ message: "Нууц үг амжилттай шинэчлэгдлээ" });
+  } catch (error) {
+    console.error("Error in resetPassword controller:", error.message);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const checkAuth = (req, res) => {
+  try {
+    res.status(200).json(req.user);
+  } catch (error) {
+    console.log("Error in checkAuth controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
