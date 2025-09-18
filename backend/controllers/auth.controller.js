@@ -55,27 +55,40 @@ export const login = async (req, res) => {
 
     // JWT cookie үүсгэх
     generateTokenAndSetCookie(res, user._id);
-    const profileComplete = user.profileCompleted;
 
     // Role шалгах
     switch (user.role) {
       case "admin":
         return res.status(200).json({
-          role: user.role,
-          profileComplete: true,
           message: "Админ",
+          user: {
+            id: user._id,
+            email: user.email,
+            role: user.role,
+            profileComplete: true,
+          },
         });
       case "trainer":
         return res.status(200).json({
-          role: user.role,
-          profileComplete,
-          message: profileComplete ? "Дасгалжуулагч" : "Шинэ дасгалжуулагч",
+          message: user.profileCompleted
+            ? "Дасгалжуулагч"
+            : "Шинэ дасгалжуулагч",
+          user: {
+            id: user._id,
+            email: user.email,
+            role: user.role,
+            profileComplete: user.profileCompleted,
+          },
         });
       case "user": // member
         return res.status(200).json({
-          role: user.role,
-          profileComplete,
-          message: profileComplete ? "Хэрэглэгч" : "Шинэ хэрэглэгч",
+          message: user.profileCompleted ? "Хэрэглэгч" : "Шинэ хэрэглэгч", // 👉 энэ нь чиний flow-г шийднэ
+          user: {
+            id: user._id,
+            email: user.email,
+            role: user.role,
+            profileComplete: user.profileCompleted,
+          },
         });
       default:
         return res.status(400).json({ message: "Invalid role" });

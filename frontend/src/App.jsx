@@ -7,6 +7,7 @@ import A_Dashboard from "./pages/dashboard/A-Dashboard";
 import T_Dashboard from "./pages/dashboard/T-Dashboard";
 import ForgotPassword from "./pages/forgotPassword";
 import ResetPassword from "./pages/resetPassword";
+import Setup_profile from "./pages/Setup_profile";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
 import { Loader } from "lucide-react";
@@ -40,9 +41,12 @@ const App = () => {
           path="/register"
           element={!authUser ? <Register /> : <Navigate to="/" />}
         />
+        <Route
+          path="/setup-profile"
+          element={!authUser ? <Navigate to="/login" /> : <Setup_profile />}
+        />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:id/:token" element={<ResetPassword />} />
-        <Route path="/setup-profile" element={<setupProfile />} />
 
         {/* Dashboard routes */}
         <Route
@@ -78,9 +82,10 @@ const App = () => {
 
         {/* Default route */}
         <Route
-          path="*"
+          path="/"
           element={<Navigate to={authUser ? `/${authUser.role}` : "/login"} />}
         />
+        <Route path="/setup-profile" element={<Setup_profile />} />
       </Routes>
 
       <Toaster />

@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema(
   {
     surname: {
       type: String,
-      required: true,
+      profilecheck: true,
     },
     username: {
       type: String,

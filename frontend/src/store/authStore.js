@@ -11,8 +11,6 @@ export const useAuthStore = create((set) => {
     isLogin: false,
     isCheckingAuth: true,
     isLoading: false,
-    role: null,
-    profileComplete: false,
     register: async (data) => {
       set({ isRegistering: true });
       try {
@@ -33,12 +31,19 @@ export const useAuthStore = create((set) => {
       try {
         const res = await axiosInstance.post("/auth/login", data);
 
-        // 👉 backend-аас ирсэн хэрэглэгчийн мэдээлэл
-        const { role, profileComplete, message } = res.data;
+        const { message, user } = res.data;
 
-        // Store-д хадгалах
+        if (!user) {
+          toast.error(message || "Нэвтрэхэд алдаа гарлаа", {
+            position: "top-center",
+          });
+          return false;
+        }
+
+        const { role, profileComplete } = user;
+
         set({
-          authUser: res.data,
+          authUser: user,
           isAuthenticated: true,
           role,
           profileComplete,
@@ -47,7 +52,7 @@ export const useAuthStore = create((set) => {
         toast.success(message, { position: "top-right" });
         return true;
       } catch (error) {
-        toast.error(error.response?.data?.message || "Login failed", {
+        toast.error(error.response?.data?.message || "Нэвтрэхэд алдаа гарлаа", {
           position: "top-center",
         });
         return false;

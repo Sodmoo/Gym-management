@@ -3,6 +3,7 @@ import { useAuthStore } from "../store/authStore";
 import { Link } from "react-router-dom";
 import { LoaderCircle, Lock, Mail, Eye, EyeOff } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -11,6 +12,7 @@ function Login() {
   });
   const { login, islogin } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
 
   const formCheck = () => {
     if (!/\S+@\S+\.\S+/.test(formData.email))
@@ -24,10 +26,17 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formCheck()) {
-      return;
-    } else {
-      login(formData);
+    if (!formCheck()) return;
+
+    const success = await login(formData);
+
+    if (success) {
+      const { profileComplete } = useAuthStore.getState();
+      if (profileComplete) {
+        navigate("/"); // 🏠 гол нүүр
+      } else {
+        navigate("/setup-profile"); // 📝 нэмэлт мэдээлэл авах хуудас
+      }
     }
   };
 
