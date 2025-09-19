@@ -1,9 +1,12 @@
 import User from "../models/user.model.js";
 import { generateTokenAndSetCookie } from "../utils/generateToken.setCookie.js";
 import nodemailer from "nodemailer";
+import multer from "multer";
 
 import bcryptjs from "bcryptjs";
 import crypto from "crypto";
+
+const upload = multer({ dest: "uploads/" });
 
 export const register = async (req, res) => {
   const { surname, username, email, password, role, gender } = req.body;
@@ -192,7 +195,42 @@ export const resetPassword = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { age, address, phone, height, weight, goal } = req.body;
 
+    let profileImage = null;
+    if (req.file) {
+      profileImage = `/uploads/${req.file.filename}`;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        age: Number(age),
+        address,
+        phone,
+        height: Number(height),
+        weight: Number(weight),
+        goal,
+        ...(profileImage && { profileImage }),
+        profileCompleted: true,
+      },
+      { new: true }
+    ).select("-password");
+
+    res.json({
+      message: "Profile updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Profile update failed", error: error.message });
+  }
+};
 export const checkAuth = (req, res) => {
   try {
     res.status(200).json(req.user);

@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema(
   {
     surname: {
       type: String,
-      profilecheck: true,
+      required: true,
     },
     username: {
       type: String,
@@ -18,16 +18,17 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
-      length: 8,
+      minlength: 8,
     },
     role: {
       type: String,
       enum: ["user", "trainer", "admin"],
+      default: "user",
     },
     gender: {
       type: String,
       enum: ["male", "female"],
-      default: "",
+      default: null,
     },
     profileCompleted: {
       type: Boolean,

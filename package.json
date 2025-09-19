@@ -6,5 +6,8 @@
     "start": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd backend && npm run dev",
     "client": "cd frontend && npm run dev"
+  },
+  "dependencies": {
+    "multer": "^2.0.2"
   }
 }

@@ -6,9 +6,11 @@ import {
   logout,
   register,
   resetPassword,
+  updateProfile,
 } from "../controllers/auth.controller.js";
 import { verify } from "crypto";
 import { verifyToken } from "../middleware/verifyToken.js";
+import { upload } from "../middleware/upload.js";
 
 const router = express.Router();
 
@@ -20,4 +22,5 @@ router.post("/logout", logout);
 router.post("/forgotPassword", forgotPassword);
 router.post("/resetPassword/:id/:token", resetPassword);
 
+router.put("/profile", verifyToken, upload.single("avatar"), updateProfile);
 export default router;
