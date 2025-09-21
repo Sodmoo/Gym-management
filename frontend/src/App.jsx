@@ -7,7 +7,7 @@ import A_Dashboard from "./pages/dashboard/A-Dashboard";
 import T_Dashboard from "./pages/dashboard/T-Dashboard";
 import ForgotPassword from "./pages/forgotPassword";
 import ResetPassword from "./pages/resetPassword";
-import Setup_profile from "./pages/Setup_profile";
+import Setup_profile from "./pages/ProfileSetup/Setup_profile";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
 import { Loader } from "lucide-react";

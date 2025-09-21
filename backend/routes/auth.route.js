@@ -6,7 +6,7 @@ import {
   logout,
   register,
   resetPassword,
-  updateProfile,
+  completeProfile,
 } from "../controllers/auth.controller.js";
 import { verify } from "crypto";
 import { verifyToken } from "../middleware/verifyToken.js";
@@ -22,5 +22,10 @@ router.post("/logout", logout);
 router.post("/forgotPassword", forgotPassword);
 router.post("/resetPassword/:id/:token", resetPassword);
 
-router.put("/profile", verifyToken, upload.single("avatar"), updateProfile);
+router.put(
+  "/complateprofile",
+  verifyToken,
+  upload.single("avatar"),
+  completeProfile
+);
 export default router;

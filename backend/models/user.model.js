@@ -34,34 +34,7 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    age: {
-      type: Number,
-      default: null,
-    },
-    phone: {
-      type: String,
-      default: "",
-    },
-    address: {
-      type: String,
-      default: "",
-    },
-    profileImage: {
-      type: String,
-      default: "",
-    },
-    height: {
-      type: Number,
-      default: null,
-    },
-    weight: {
-      type: Number,
-      default: null,
-    },
-    goal: {
-      type: String,
-      default: "",
-    },
+
     resetToken: String,
     resetTokenExpiry: Date,
   },

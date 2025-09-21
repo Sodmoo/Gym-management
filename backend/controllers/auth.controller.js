@@ -1,4 +1,6 @@
 import User from "../models/user.model.js";
+import Member from "../models/member.model.js";
+import Trainer from "../models/trainer.model.js";
 import { generateTokenAndSetCookie } from "../utils/generateToken.setCookie.js";
 import nodemailer from "nodemailer";
 import multer from "multer";
@@ -10,7 +12,6 @@ const upload = multer({ dest: "uploads/" });
 
 export const register = async (req, res) => {
   const { surname, username, email, password, role, gender } = req.body;
-
   try {
     if (!surname || !username || !email || !password || !role) {
       return res.status(400).json({ message: "Талбар дутуу байна" });
@@ -26,7 +27,6 @@ export const register = async (req, res) => {
     }
 
     const hashedPassword = await bcryptjs.hash(password, 10);
-
     const user = new User({
       surname,
       username,
@@ -35,14 +35,22 @@ export const register = async (req, res) => {
       role,
       gender,
     });
-
     await user.save();
+
+    if (role === "user") {
+      const newMember = new Member({ userId: user._id });
+      await newMember.save();
+    } else if (role === "trainer") {
+      const newTrainer = new Trainer({ userId: user._id });
+      await newTrainer.save();
+    }
 
     res.status(201).json({ message: "Хэрэглэгч амжилттай үүсгэлээ" });
   } catch (error) {
     console.error("алдаа гарлаа", error);
   }
 };
+
 export const login = async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -171,6 +179,7 @@ export const forgotPassword = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 export const resetPassword = async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
@@ -195,42 +204,83 @@ export const resetPassword = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
-export const updateProfile = async (req, res) => {
+
+export const completeProfile = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const { age, address, phone, height, weight, goal } = req.body;
+    const user = req.user;
+    const userId = user._id;
+
+    const {
+      age,
+      address,
+      phone,
+      height,
+      weight,
+      goal,
+      experience,
+      specialization,
+      certifications,
+    } = req.body;
 
     let profileImage = null;
-    if (req.file) {
-      profileImage = `/uploads/${req.file.filename}`;
+    if (req.file) profileImage = `/uploads/${req.file.filename}`;
+
+    let profileRecord = null;
+
+    if (user.role === "user") {
+      profileRecord = await Member.findOneAndUpdate(
+        { userId }, // schema-д таарсан талбар
+        {
+          userId,
+          age: Number(age),
+          address,
+          phone,
+          height: Number(height),
+          weight: Number(weight),
+          goal,
+          ...(profileImage && { profileImage }),
+        },
+        { new: true, upsert: true }
+      );
+    } else if (user.role === "trainer") {
+      profileRecord = await Trainer.findOneAndUpdate(
+        { userId },
+        {
+          userId,
+          age: Number(age),
+          address,
+          phone,
+          height: Number(height),
+          weight: Number(weight),
+          experience,
+          specialization,
+          certifications: certifications ? certifications.split(",") : [],
+          ...(profileImage && { profileImage }),
+        },
+        { new: true, upsert: true }
+      );
     }
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      {
-        age: Number(age),
-        address,
-        phone,
-        height: Number(height),
-        weight: Number(weight),
-        goal,
-        ...(profileImage && { profileImage }),
-        profileCompleted: true,
-      },
+      { profileCompleted: true },
       { new: true }
     ).select("-password");
 
     res.json({
-      message: "Profile updated successfully",
+      message: "Профайл амжилттай хадгалагдлаа",
       user: updatedUser,
+      profile: profileRecord,
     });
   } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ message: "Profile update failed", error: error.message });
+    console.error("completeProfile алдаа:", error);
+    res.status(500).json({
+      message: "Profile completion failed",
+      error: error.message,
+    });
   }
 };
+
 export const checkAuth = (req, res) => {
   try {
     res.status(200).json(req.user);

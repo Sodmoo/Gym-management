@@ -26,6 +26,7 @@ export const useAuthStore = create((set) => {
         set({ isRegistering: false });
       }
     },
+
     login: async (data) => {
       set({ isLogin: true });
       try {
@@ -72,6 +73,7 @@ export const useAuthStore = create((set) => {
         return false; // Indicate logout failure
       }
     },
+
     forgotPassword: async (email) => {
       set({ isLoading: true });
       try {
@@ -87,6 +89,7 @@ export const useAuthStore = create((set) => {
         toast.error(error.response.data.message, { position: "top-center" });
       }
     },
+
     resetPassword: async (id, token, password) => {
       set({ isLoading: true });
 

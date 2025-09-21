@@ -31,11 +31,12 @@ function Login() {
     const success = await login(formData);
 
     if (success) {
-      const { profileComplete } = useAuthStore.getState();
+      const { profileComplete, role } = useAuthStore.getState();
+
       if (profileComplete) {
         navigate("/"); // 🏠 гол нүүр
       } else {
-        navigate("/setup-profile"); // 📝 нэмэлт мэдээлэл авах хуудас
+        navigate("/setup-profile", { state: { role } }); // role-г дамжуулж байна
       }
     }
   };
