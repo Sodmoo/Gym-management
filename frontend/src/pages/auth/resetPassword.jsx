@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuthStore } from "../store/authStore";
+import { useAuthStore } from "../../store/authStore";
 import { LoaderCircle, Lock, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
 

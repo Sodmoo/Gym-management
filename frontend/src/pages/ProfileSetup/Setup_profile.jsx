@@ -258,7 +258,7 @@ const Step5 = ({ role }) => {
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <Card>
           <h2 className="text-2xl font-bold text-gray-800 text-center">
-            Step 5: Trainer мэдээлэл
+            Trainer мэдээлэл
           </h2>
           <div className="space-y-4">
             <Input
@@ -313,7 +313,8 @@ const Step4 = () => {
         <div className="text-center space-y-4">
           <h2 className="text-2xl font-bold text-green-600">🎉 Баяр хүргэе!</h2>
           <p className="text-gray-600">
-            Таны профайл амжилттай бүрдлээ. Та удахгүй эхлэл хуудас руу шилжинэ.
+            Таны профайл амжилттай хадгалагдлаа. Та удахгүй эхлэл хуудас руу
+            шилжинэ.
           </p>
         </div>
       </Card>

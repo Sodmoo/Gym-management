@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuthStore } from "../store/authStore.js";
+import { useAuthStore } from "../../store/authStore.js";
 import { toast } from "react-hot-toast";
 import {
   LoaderCircle,

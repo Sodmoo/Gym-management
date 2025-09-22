@@ -2,9 +2,8 @@ import React from "react";
 import { useAuthStore } from "../store/authStore";
 import { useNavigate } from "react-router-dom";
 
-
 const Header = () => {
-  const { authUser , logout  } = useAuthStore();
+  const { authUser, logout } = useAuthStore();
   const navigate = useNavigate();
   const handleLogout = async () => {
     const islogout = await logout();
@@ -14,17 +13,44 @@ const Header = () => {
       }, 200);
     }
   };
+  const title = "Sales Report",
+    subtitle = "Friday, December 15th, 2023";
+  const onMenuClick = () => {
+    const sidebar = document.getElementById("sidebar");
+    if (sidebar) {
+      sidebar.classList.toggle("-translate-x-full");
+    }
+  };
 
   return (
-    <header className="bg-white shadow-md h-16 flex items-center justify-between px-6">
-      <h1 className="text-xl font-bold text-gray-800">My Dashboard</h1>
-      <div className="flex items-center space-x-4">
-        <span className="text-gray-600 capitalize">{authUser.role}</span>
-        <button onClick={handleLogout}
-          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
+    <header className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-4">
+        <button
+          className="lg:hidden p-2 rounded-md hover:bg-gray-100"
+          onClick={onMenuClick}
         >
-          Logout
+          ☰
         </button>
+        <div>
+          <h2 className="text-xl md:text-2xl font-bold">{title}</h2>
+          <p className="text-xs md:text-sm text-gray-500">{subtitle}</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="relative hidden sm:block">
+          <input
+            className="w-40 md:w-64 rounded-xl border border-gray-200 bg-white px-3 md:px-4 py-2 text-sm focus:outline-none"
+            placeholder="Search..."
+          />
+        </div>
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-200"></div>
+          <div className="hidden sm:block text-right">
+            <div className="text-sm font-medium">Ferra Alexandra</div>
+            <div className="text-xs text-gray-400">Admin store</div>
+          </div>
+        </div>
       </div>
     </header>
   );

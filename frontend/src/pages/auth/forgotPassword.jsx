@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuthStore } from "../store/authStore";
+import { useAuthStore } from "../../store/authStore";
 import { LoaderCircle, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 

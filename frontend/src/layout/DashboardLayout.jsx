@@ -3,15 +3,15 @@ import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 
 const DashboardLayout = ({ children }) => {
+  const [open, setOpen] = React.useState(false);
   return (
-    <div className="flex flex-col h-screen">
-      <Header />
-      <div className="flex flex-1">
-        <Sidebar />
-        <main className="flex-1 p-6 bg-gray-100 overflow-y-auto">
-          {children}
-        </main>
-      </div>
+    <div className="min-h-screen flex bg-gray-100 text-gray-800">
+      <Sidebar />
+      <MobileSidebar open={open} onClose={() => setOpen(false)} />
+      <main className="flex-1 p-4 md:p-6 lg:ml-6">
+        <Header onMenuClick={() => setOpen(true)} />
+        {children}
+      </main>
     </div>
   );
 };

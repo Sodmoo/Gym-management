@@ -1,12 +1,12 @@
 import React, { useEffect } from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
-import Login from "./pages/loginPage";
-import Register from "./pages/registerPage";
+import Login from "./pages/auth/loginPage";
+import Register from "./pages/auth/registerPage";
 import S_Dashboard from "./pages/dashboard/S-Dashboard";
 import A_Dashboard from "./pages/dashboard/A-Dashboard";
 import T_Dashboard from "./pages/dashboard/T-Dashboard";
-import ForgotPassword from "./pages/forgotPassword";
-import ResetPassword from "./pages/resetPassword";
+import ForgotPassword from "./pages/auth/forgotPassword";
+import ResetPassword from "./pages/auth/resetPassword";
 import Setup_profile from "./pages/ProfileSetup/Setup_profile";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
@@ -17,6 +17,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
+  const { profileComplete } = useAuthStore.getState();
 
   useEffect(() => {
     checkAuth();
@@ -43,7 +44,15 @@ const App = () => {
         />
         <Route
           path="/setup-profile"
-          element={!authUser ? <Navigate to="/login" /> : <Setup_profile />}
+          element={
+            !authUser ? (
+              <Navigate to="/login" />
+            ) : profileComplete ? (
+              <Setup_profile />
+            ) : (
+              <Navigate to="/" />
+            )
+          }
         />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:id/:token" element={<ResetPassword />} />
@@ -85,7 +94,6 @@ const App = () => {
           path="/"
           element={<Navigate to={authUser ? `/${authUser.role}` : "/login"} />}
         />
-        <Route path="/setup-profile" element={<Setup_profile />} />
       </Routes>
 
       <Toaster />

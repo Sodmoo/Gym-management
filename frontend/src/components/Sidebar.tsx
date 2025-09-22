@@ -2,7 +2,6 @@ import React from "react";
 import { Link, To } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 
-
 const Sidebar = () => {
   const { authUser } = useAuthStore();
   const user = authUser;
@@ -28,18 +27,27 @@ const Sidebar = () => {
   };
 
   const roleMenus =
-    user && (user.role === "admin" || user.role === "teacher" || user.role === "student")
+    user &&
+    (user.role === "admin" ||
+      user.role === "teacher" ||
+      user.role === "student")
       ? menus[user.role as Role]
       : [];
 
   return (
-    <aside className="w-64 bg-gray-900 text-white h-full p-4">
-      <h2 className="text-xl font-bold mb-4 capitalize">{user?.role} Panel</h2>
+    <aside
+      className="
+        hidden md:block 
+        fixed md:static top-0 left-0 h-full 
+        w-64 bg-gray-900 text-white p-4
+      "
+    >
+      <h2 className="text-xl font-bold mb-6 capitalize">{user?.role} Panel</h2>
       <ul className="space-y-2">
-        {roleMenus.map((item: { path: To; label: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; }, idx: React.Key | null | undefined) => (
+        {roleMenus.map((item, idx) => (
           <li key={idx}>
             <Link
-              to={item.path}
+              to={item.path as To}
               className="block px-3 py-2 rounded hover:bg-gray-700 transition"
             >
               {item.label}
