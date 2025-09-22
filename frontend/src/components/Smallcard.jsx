@@ -1,4 +1,4 @@
-function SmallCard({ title, value, note }) {
+const SmallCard = ({ title, value, note }) => {
   return (
     <div className="bg-white rounded-2xl shadow p-4 md:p-5 flex flex-col justify-between">
       <div className="text-xs md:text-sm text-gray-500">{title}</div>
@@ -8,4 +8,6 @@ function SmallCard({ title, value, note }) {
       </div>
     </div>
   );
-}
+};
+
+export default SmallCard;

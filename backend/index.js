@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 
 import { connectDB } from "./db/connect.js";
 import authRoute from "./routes/auth.route.js";
+import userRoute from "./routes/user.route.js";
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/auth", authRoute);
+app.use("/api/users", userRoute);
 app.use("/uploads", express.static("uploads"));
 
 const PORT = process.env.PORT;

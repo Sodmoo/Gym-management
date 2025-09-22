@@ -15,13 +15,14 @@ export const verifyToken = async (req, res, next) => {
         .status(401)
         .json({ success: false, message: "Unauthorized - invalid token" });
 
+    // Make sure you use the same key as when signing the JWT!
     const user = await User.findById(decoded.userId).select("-password");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    req.user = user;
+    req.user = { ...user._doc, id: user._id }; // ensures req.user.id is available
     next();
   } catch (error) {
     console.log("Error in verifyToken ", error);

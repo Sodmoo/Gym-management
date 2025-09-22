@@ -4,9 +4,9 @@ import Trainer from "../models/trainer.model.js";
 import { generateTokenAndSetCookie } from "../utils/generateToken.setCookie.js";
 import nodemailer from "nodemailer";
 import multer from "multer";
-
 import bcryptjs from "bcryptjs";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 
 const upload = multer({ dest: "uploads/" });
 
@@ -67,43 +67,28 @@ export const login = async (req, res) => {
     // JWT cookie үүсгэх
     generateTokenAndSetCookie(res, user._id);
 
-    // Role шалгах
-    switch (user.role) {
-      case "admin":
-        return res.status(200).json({
-          message: "Админ",
-          user: {
-            id: user._id,
-            email: user.email,
-            role: user.role,
-            profileComplete: true,
-          },
-        });
-      case "trainer":
-        return res.status(200).json({
-          message: user.profileCompleted
-            ? "Дасгалжуулагч"
-            : "Шинэ дасгалжуулагч",
-          user: {
-            id: user._id,
-            email: user.email,
-            role: user.role,
-            profileComplete: user.profileCompleted,
-          },
-        });
-      case "user": // member
-        return res.status(200).json({
-          message: user.profileCompleted ? "Хэрэглэгч" : "Шинэ хэрэглэгч", // 👉 энэ нь чиний flow-г шийднэ
-          user: {
-            id: user._id,
-            email: user.email,
-            role: user.role,
-            profileComplete: user.profileCompleted,
-          },
-        });
-      default:
-        return res.status(400).json({ message: "Invalid role" });
+    let profileImage = null;
+
+    // Role шалгах ба profileImage авах
+    if (user.role === "trainer") {
+      const trainer = await Trainer.findOne({ user: user._id });
+      profileImage = trainer?.profileImage || null;
     }
+
+    if (user.role === "user") {
+      const member = await Member.findOne({ user: user._id });
+      profileImage = member?.profileImage || null;
+    }
+
+    // Response буцаах
+    return res.status(200).json({
+      message: user.profileCompleted ? user.role : "шинэ " + user.role,
+      user: {
+        id: user._id,
+        role: user.role,
+        profileComplete: user.profileCompleted,
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
@@ -223,7 +208,7 @@ export const completeProfile = async (req, res) => {
     } = req.body;
 
     let profileImage = null;
-    if (req.file) profileImage = `/uploads/${req.file.filename}`;
+    if (req.file) profileImage = `${req.file.filename}`;
 
     let profileRecord = null;
 

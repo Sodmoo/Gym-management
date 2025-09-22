@@ -2,26 +2,34 @@ import React, { useEffect } from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
 import Login from "./pages/auth/loginPage";
 import Register from "./pages/auth/registerPage";
-import S_Dashboard from "./pages/dashboard/S-Dashboard";
-import A_Dashboard from "./pages/dashboard/A-Dashboard";
-import T_Dashboard from "./pages/dashboard/T-Dashboard";
 import ForgotPassword from "./pages/auth/forgotPassword";
 import ResetPassword from "./pages/auth/resetPassword";
 import Setup_profile from "./pages/ProfileSetup/Setup_profile";
+import A_Dashboard from "./pages/dashboard/A_dashboard";
+import T_Dashboard from "./pages/dashboard/T_dashboard";
+import U_Dashboard from "./pages/dashboard/U_dashboard";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
 import { Loader } from "lucide-react";
+import { useUserStore } from "./store/userStore";
 
 import DashboardLayout from "./layout/DashboardLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
+  const fetchUser = useUserStore((s) => s.fetchUser);
   const { profileComplete } = useAuthStore.getState();
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  useEffect(() => {
+    if (authUser) {
+      fetchUser();
+    }
+  }, [authUser, fetchUser]);
 
   if (isCheckingAuth && !authUser)
     return (
@@ -47,7 +55,7 @@ const App = () => {
           element={
             !authUser ? (
               <Navigate to="/login" />
-            ) : profileComplete ? (
+            ) : !profileComplete ? (
               <Setup_profile />
             ) : (
               <Navigate to="/" />
@@ -83,7 +91,7 @@ const App = () => {
           element={
             <ProtectedRoute role="user">
               <DashboardLayout>
-                <S_Dashboard />
+                <U_Dashboard />
               </DashboardLayout>
             </ProtectedRoute>
           }

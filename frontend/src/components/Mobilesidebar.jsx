@@ -1,3 +1,6 @@
+import React from "react";
+import Sidebar from "./Sidebar";
+
 export function MobileSidebar({ open, onClose }) {
   return (
     <div

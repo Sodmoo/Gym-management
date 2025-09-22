@@ -1,10 +1,15 @@
-import React from "react";
-import { useAuthStore } from "../store/authStore";
+import React, { useEffect, useState } from "react";
+import { useUserStore } from "../store/userStore.js";
+import { useAuthStore } from "../store/authStore.js";
 import { useNavigate } from "react-router-dom";
+import { upload } from "../../../backend/middleware/upload.js";
 
 const Header = () => {
-  const { authUser, logout } = useAuthStore();
+  const { isLoading, logout } = useAuthStore();
+  const { user } = useUserStore();
   const navigate = useNavigate();
+  const [dateString, setDateString] = useState("");
+
   const handleLogout = async () => {
     const islogout = await logout();
     if (islogout) {
@@ -13,14 +18,36 @@ const Header = () => {
       }, 200);
     }
   };
-  const title = "Sales Report",
-    subtitle = "Friday, December 15th, 2023";
+
+  useEffect(() => {
+    const today = new Date();
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    };
+    setDateString(today.toLocaleDateString("mn-MN", options));
+  }, []);
+
   const onMenuClick = () => {
     const sidebar = document.getElementById("sidebar");
     if (sidebar) {
       sidebar.classList.toggle("-translate-x-full");
     }
   };
+
+  // 🔹 isLoading эсвэл authUser байхгүй үед
+  if (isLoading || !user) {
+    return (
+      <header className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <div className="animate-pulse h-6 w-32 bg-gray-200 rounded"></div>
+        </div>
+        <div className="animate-pulse h-8 w-8 rounded-full bg-gray-200"></div>
+      </header>
+    );
+  }
 
   return (
     <header className="flex items-center justify-between mb-6">
@@ -31,9 +58,12 @@ const Header = () => {
         >
           ☰
         </button>
+
         <div>
-          <h2 className="text-xl md:text-2xl font-bold">{title}</h2>
-          <p className="text-xs md:text-sm text-gray-500">{subtitle}</p>
+          <h2 className="text-xl md:text-2xl font-bold">
+            Эргээд тавтай морил {user?.username}
+          </h2>
+          <p className="text-xs md:text-sm text-gray-500">{dateString}</p>
         </div>
       </div>
 
@@ -44,12 +74,31 @@ const Header = () => {
             placeholder="Search..."
           />
         </div>
+
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-200"></div>
-          <div className="hidden sm:block text-right">
-            <div className="text-sm font-medium">Ferra Alexandra</div>
-            <div className="text-xs text-gray-400">Admin store</div>
+          <div className="flex items-center gap-2 md:gap-3">
+            {user?.profileImage ? (
+              <img
+                src={user.profileImage}
+                alt="avatar"
+                className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover"
+              />
+            ) : (
+              // Хэрвээ зураг байхгүй бол default placeholder
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-200"></div>
+            )}
           </div>
+
+          <div className="hidden sm:block text-right">
+            <div className="text-sm font-medium">{user?.username}</div>
+            <div className="text-xs text-gray-400">{user?.role}</div>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="text-sm text-red-500 hover:underline"
+          >
+            Гарах
+          </button>
         </div>
       </div>
     </header>

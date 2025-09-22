@@ -1,6 +1,7 @@
 import React from "react";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
+import { MobileSidebar } from "../components/Mobilesidebar";
 
 const DashboardLayout = ({ children }) => {
   const [open, setOpen] = React.useState(false);
