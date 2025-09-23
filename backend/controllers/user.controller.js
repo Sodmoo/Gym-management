@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import Member from "../models/member.model.js";
 import Trainer from "../models/trainer.model.js";
+import bcryptjs from "bcryptjs";
 
 export const userinfo = async (req, res) => {
   try {
@@ -32,6 +33,91 @@ export const userinfo = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in userinfo:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const alluser = async (req, res) => {
+  try {
+    const users = await User.find({ role: "user" }).lean();
+    res.json(users);
+  } catch (error) {
+    console.error("Error in alluser:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const alltrainer = async (req, res) => {
+  try {
+    const trainers = await User.find({ role: "trainer" }).lean();
+    res.json(trainers);
+  } catch (error) {
+    console.error("Error in alltrainer:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const createUser = async (req, res) => {
+  try {
+    const { surname, username, email, password, role, gender } = req.body;
+    if (!surname || !username || !email || !password || !role || !gender) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+    const alreadyExists = await User.findOne({ email });
+    if (alreadyExists) {
+      return res.status(400).json({ message: "Бүртгэлтэй хэрэглэгч" });
+    }
+    if (password.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Нууц үг багадаа 6 оронтой байна" });
+    }
+    const hashedPassword = await bcryptjs.hash(password, 10);
+    const newUser = new User({
+      surname,
+      username,
+      email,
+      password: hashedPassword,
+      role,
+      gender,
+    });
+    await newUser.save();
+    res
+      .status(201)
+      .json({ message: "User created successfully", userId: newUser._id });
+  } catch (error) {
+    console.error("Error in createUser:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    const updatedUser = await User.findByIdAndUpdate(id, updates, { new: true })
+      .lean()
+      .exec();
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({ message: "User updated successfully", user: updatedUser });
+  } catch (error) {
+    console.error("Error in updateUser:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedUser = await User.findByIdAndDelete(id).lean().exec();
+    if (!deletedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("Error in deleteUser:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

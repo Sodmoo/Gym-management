@@ -13,6 +13,7 @@ const Sidebar = () => {
     admin: [
       { path: "/admin", label: "Dashboard" },
       { path: "/admin/users", label: "Manage Users" },
+      { path: "/admin/trainers", label: "Manage Trainers" },
       { path: "/admin/settings", label: "Settings" },
     ],
     trainer: [

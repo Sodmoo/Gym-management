@@ -25,13 +25,26 @@ const Header = (props: {
 
   useEffect(() => {
     const today = new Date();
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    };
-    setDateString(today.toLocaleDateString("mn-MN", options));
+
+    // Монгол гарагийн нэрс
+    const weekdays = [
+      "Ням",
+      "Даваа",
+      "Мягмар",
+      "Лхагва",
+      "Пүрэв",
+      "Баасан",
+      "Бямба",
+    ];
+
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+    const day = today.getDate();
+    const weekday = weekdays[today.getDay()];
+    const formattedMonth = month < 10 ? `0${month}` : `${month}`;
+
+    // "2025 9 сарын 23, Мягмар гариг"
+    setDateString(`${year} : ${formattedMonth} : ${day}, ${weekday} гариг`);
   }, []);
 
   // гадна дархад dropdown хаах
@@ -76,7 +89,7 @@ const Header = (props: {
           <h2 className="text-xl md:text-2xl font-bold">
             Эргээд тавтай морил {user?.username}
           </h2>
-          <p className="text-xs md:text-sm text-gray-500 mt-2">{dateString}</p>
+          <p className="text-xs md:text-lg text-green-500 mt-2">{dateString}</p>
         </div>
       </div>
 
