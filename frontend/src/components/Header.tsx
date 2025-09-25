@@ -44,7 +44,7 @@ const Header = (props: {
     const formattedMonth = month < 10 ? `0${month}` : `${month}`;
 
     // "2025 9 сарын 23, Мягмар гариг"
-    setDateString(`${year} : ${formattedMonth} : ${day}, ${weekday} гариг`);
+    setDateString(`${year} : ${formattedMonth} : ${day} ${weekday} гариг`);
   }, []);
 
   // гадна дархад dropdown хаах
@@ -76,24 +76,25 @@ const Header = (props: {
   }
 
   return (
-    <header className="flex items-center justify-between mb-6">
-      <div className="flex items-center gap-4">
+    <header className="flex items-center justify-between mt-6 pl-4 pr-6">
+      <div className="flex items-center gap-2 ">
         <button
-          className="lg:hidden ml-4 mt-6 rounded-md hover:bg-gray-100 p-2 transition"
+          className="lg:hidden ml-4  rounded-md hover:bg-gray-100 p-2 transition"
           onClick={props.onMenuClick}
         >
           ☰
         </button>
 
-        <div className="mt-6 ml-6 hidden sm:block ">
+        <div className=" ml-2 hidden sm:block mt-2 mb-2">
           <h2 className="text-xl md:text-2xl font-bold">
-            Эргээд тавтай морил {user?.username}
+            Эргээд тавтай морил{" "}
+            <span className="text-green-400">{user?.username}</span>
           </h2>
-          <p className="text-xs md:text-lg text-green-500 mt-2">{dateString}</p>
+          <p className="text-xs md:text-lg text-black mt-2">{dateString}</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-4 relative mr-7 mt-4" ref={menuRef}>
+      <div className="flex items-center gap-2 relative " ref={menuRef}>
         {/* Username + Role */}
         <div className="hidden sm:block text-right">
           <div className="text-sm font-medium">{user?.username}</div>
@@ -102,25 +103,25 @@ const Header = (props: {
 
         {/* Avatar */}
         <div
-          className="flex items-center cursor-pointer p-1 hover:bg-green-200 rounded-full transition"
+          className="flex items-center cursor-pointer p-0.5 hover:bg-green-300 rounded-full transition"
           onClick={() => setMenuOpen(!menuOpen)}
         >
           {user?.profileImage ? (
             <img
               src={user.profileImage}
               alt="avatar"
-              className="w-10 h-10 md:w-10 md:h-10 rounded-full object-cover border border-gray-300"
+              className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border border-gray-300"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-              <UserIcon className="w-6 h-6 text-gray-500" />
+            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
+              <UserIcon className="w-7 h-7 text-gray-500" />
             </div>
           )}
         </div>
 
         {/* Dropdown */}
         {menuOpen && (
-          <div className="absolute top-15 right-2 w-60 bg-white shadow-lg rounded border-1 border-green-300 py-2 z-50">
+          <div className="absolute top-15 right-0 w-60 bg-white shadow-lg rounded border-1 border-green-300 py-2 z-50">
             {/* Top user info */}
             <div className="p-3 border-b">
               <div className="flex items-center gap-2">

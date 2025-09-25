@@ -39,8 +39,28 @@ export const userinfo = async (req, res) => {
 
 export const alluser = async (req, res) => {
   try {
+    // Get all users
     const users = await User.find({ role: "user" }).lean();
-    res.json(users);
+
+    // For each user, get extra info from Member
+    const usersWithExtra = await Promise.all(
+      users.map(async (user) => {
+        const extra = await Member.findOne({ userId: user._id }).lean();
+        let profileImage = null;
+        if (extra && extra.profileImage) {
+          profileImage = `${req.protocol}://${req.get("host")}/uploads/${
+            extra.profileImage
+          }`;
+        }
+        return {
+          ...user,
+          ...(extra || {}),
+          profileImage,
+        };
+      })
+    );
+
+    res.json(usersWithExtra);
   } catch (error) {
     console.error("Error in alluser:", error);
     res.status(500).json({ message: "Internal server error" });
