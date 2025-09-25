@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { useUserStore } from "../../store/userStore";
 import { Loader2, Trash2 } from "lucide-react";
+import { trainerStore } from "../../store/trainerStore";
 
 const DeleteUserForm = ({ user, onClose }) => {
   const { deleteUser, isLoading, getAllUsers } = useUserStore();
+  const { getAllTrainers } = trainerStore();
   const [confirmEmail, setConfirmEmail] = useState("");
 
   const handleSubmit = async (e) => {
@@ -13,7 +15,11 @@ const DeleteUserForm = ({ user, onClose }) => {
       return;
     }
     await deleteUser(user._id);
-    getAllUsers();
+    if (user.role === "trainer") {
+      await getAllTrainers();
+    } else if (user.role === "user") {
+      await getAllUsers();
+    }
     onClose();
   };
 

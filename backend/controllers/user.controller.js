@@ -142,18 +142,38 @@ export const deleteUser = async (req, res) => {
 
 export const alltrainer = async (req, res) => {
   try {
+    // Always use .find() to get an array
     const users = await User.find({ role: "trainer" }).lean();
+
+    // For each trainer, merge User and Trainer info
     const trainersWithExtra = await Promise.all(
-      users.map(async (user) => {
+      (Array.isArray(users) ? users : []).map(async (user) => {
         const extra = await Trainer.findOne({ userId: user._id }).lean();
+        let profileImage = null;
+        let trainerId = null;
+        let extraRest = {};
+        if (extra) {
+          trainerId = extra._id; // Save trainer's _id as trainerId
+          const { _id, ...rest } = extra;
+          extraRest = rest;
+          if (extra.profileImage) {
+            profileImage = `${req.protocol}://${req.get("host")}/uploads/${
+              extra.profileImage
+            }`;
+          }
+        }
         return {
-          ...user,
-          ...(extra || {}),
+          ...user, // user._id is the User's id
+          trainerId, // trainerId is the Trainer's id
+          ...extraRest, // all other trainer fields, except _id
+          profileImage,
         };
       })
     );
+
     res.json(trainersWithExtra);
   } catch (error) {
+    console.error("Error in alltrainer:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -161,8 +181,8 @@ export const alltrainer = async (req, res) => {
 export const trainerConfirm = async (req, res) => {
   try {
     const { id } = req.params; // id is the User's _id
-    const trainer = await Trainer.findByIdAndUpdate(
-      id,
+    const trainer = await Trainer.findOneAndUpdate(
+      { userId: id },
       { isconfirmed: true },
       { new: true }
     )
@@ -181,8 +201,8 @@ export const trainerConfirm = async (req, res) => {
 export const trainerReject = async (req, res) => {
   try {
     const { id } = req.params; // id is the User's _id
-    const trainer = await Trainer.findByIdAndUpdate(
-      id,
+    const trainer = await Trainer.findOneAndUpdate(
+      { userId: id },
       { isconfirmed: false },
       { new: true }
     )

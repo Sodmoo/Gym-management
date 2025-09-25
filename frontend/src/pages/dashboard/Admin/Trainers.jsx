@@ -4,7 +4,7 @@ import { Pencil, Trash2, Eye, Check, Minus } from "lucide-react";
 import Modal from "../../../components/Modal";
 import { trainerStore } from "../../../store/trainerStore";
 import EditTrainerForm from "../../../components/Crud-Trainer/Edittrainerform.jsx";
-import DeleteTrainerForm from "../../../components/Crud-Trainer/Deletetrainerform.jsx";
+import DeleteUserForm from "../../../components/Crud-User/Deleteuserform.jsx";
 import CreateTrainerForm from "../../../components/Crud-Trainer/Createtrainerform.jsx";
 import ShowTrainerForm from "../../../components/Crud-Trainer/Showtrainerform.jsx";
 
@@ -188,7 +188,7 @@ const Trainers = () => {
         onClose={() => setdeleteModalOpen(false)}
       >
         {selectedUser && (
-          <DeleteTrainerForm
+          <DeleteUserForm
             user={selectedUser}
             onClose={() => setdeleteModalOpen(false)}
           />
