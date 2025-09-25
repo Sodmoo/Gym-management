@@ -1,6 +1,6 @@
 import React from "react";
-import Header from "../components/Header";
-import Sidebar from "../components/Sidebar";
+import Header from "../components/Header.jsx";
+import Sidebar from "../components/Sidebar.jsx";
 import { MobileSidebar } from "../components/Mobilesidebar";
 
 const DashboardLayout = ({ children }) => {

@@ -34,20 +34,6 @@ export const useUserStore = create((set) => ({
       set({ isLoading: false });
     }
   },
-
-  getAllTrainers: async () => {
-    set({ isLoading: true });
-    try {
-      const res = await axiosInstance.get("/users/alltrainer");
-      set({ trainers: res.data });
-      return true;
-    } catch (error) {
-      console.error("Error fetching all trainers:", error);
-      return false;
-    } finally {
-      set({ isLoading: false });
-    }
-  },
   updateUser: async (id, userData) => {
     set({ isLoading: true });
     try {
@@ -66,10 +52,12 @@ export const useUserStore = create((set) => ({
   deleteUser: async (id) => {
     set({ isLoading: true });
     try {
-      await axiosInstance.delete(`/users/delete/${id}`);
-      toast.success("Хэрэглэгчийг амжилттай устгалаа", {
-        position: "top-center",
-      });
+      const res = await axiosInstance.delete(`/users/delete/${id}`);
+      if (res.status === 200) {
+        toast.success("Хэрэглэгчийг амжилттай устгалаа", {
+          position: "top-center",
+        });
+      }
       return true;
     } catch (error) {
       toast.error(error.response?.data?.message || "Алдаа гарлаа", {

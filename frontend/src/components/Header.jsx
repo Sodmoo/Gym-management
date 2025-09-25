@@ -4,9 +4,7 @@ import { useAuthStore } from "../store/authStore.js";
 import { useNavigate } from "react-router-dom";
 import { User as UserIcon, LogOut, Inbox, Wallet } from "lucide-react";
 
-const Header = (props: {
-  onMenuClick: React.MouseEventHandler<HTMLButtonElement> | undefined;
-}) => {
+const Header = (props) => {
   const { isLoading, logout } = useAuthStore();
   const { user } = useUserStore();
   const navigate = useNavigate();
@@ -49,11 +47,8 @@ const Header = (props: {
 
   // гадна дархад dropdown хаах
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        menuRef.current &&
-        !(menuRef.current as HTMLElement).contains(event.target as Node)
-      ) {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
         setMenuOpen(false);
       }
     };

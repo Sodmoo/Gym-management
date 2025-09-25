@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useUserStore } from "../../../store/userStore";
 import { Pencil, Trash2, Eye } from "lucide-react";
 import Modal from "../../../components/Modal";
-import EditUserForm from "../../../components/Edituserform";
-import DeleteUserForm from "../../../components/Deleteuserform";
-import CreateUserForm from "../../../components/Createuserform";
-import Showuserform from "../../../components/Showuserform";
+import EditUserForm from "../../../components/Crud-User/Edituserform.jsx";
+import DeleteUserForm from "../../../components/Crud-User/Deleteuserform.jsx";
+import CreateUserForm from "../../../components/Crud-User/Createuserform.jsx";
+import Showuserform from "../../../components/Crud-User/Showuserform.jsx";
 
 const Users = () => {
   const { users, getAllUsers } = useUserStore();
@@ -63,7 +63,6 @@ const Users = () => {
               <th className="px-4 py-2 font-medium">Овог</th>
               <th className="px-4 py-2 font-medium">Нэр</th>
               <th className="px-4 py-2 font-medium">Имэйл</th>
-              <th className="px-4 py-2 font-medium">Үүрэг</th>
               <th className="px-4 py-2 font-medium">Хүйс</th>
               <th className="px-4 py-2 font-medium">Бүртгэсэн огноо</th>
               <th className="px-4 py-2 font-medium">Баталгаажсан</th>
@@ -81,7 +80,6 @@ const Users = () => {
                   <td className="px-4 py-3">{user.surname}</td>
                   <td className="px-4 py-3">{user.username}</td>
                   <td className="px-4 py-3">{user.email}</td>
-                  <td className="px-4 py-3 capitalize">{user.role}</td>
                   <td className="px-4 py-3 capitalize">{user.gender}</td>
                   <td className="px-4 py-3">
                     {new Date(user.createdAt).toLocaleDateString("mn-MN")}

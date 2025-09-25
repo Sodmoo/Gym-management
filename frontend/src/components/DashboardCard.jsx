@@ -36,7 +36,7 @@ const DashboardCards = () => {
             <h3 className="text-sm font-medium text-gray-600">{stat.title}</h3>
             <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
           </div>
-          <div className="bg-white p-3 rounded-xl shadow-sm">{stat.icon}</div>
+          <div className="bg-white p-4 rounded-xl shadow-sm">{stat.icon}</div>
         </div>
       ))}
     </div>

@@ -6,6 +6,8 @@ import {
   deleteUser,
   updateUser,
   userinfo,
+  trainerConfirm,
+  trainerReject,
 } from "../controllers/user.controller.js";
 import { verifyToken } from "../middleware/verifyToken.js";
 
@@ -18,6 +20,8 @@ router.get("/alltrainer", verifyToken, alltrainer);
 router.post("/create", verifyToken, createUser);
 
 router.put("/update/:id", verifyToken, updateUser);
+router.put("/trainer_confirm/:id", verifyToken, trainerConfirm);
+router.put("/trainer_reject/:id", verifyToken, trainerReject);
 
 router.delete("/delete/:id", verifyToken, deleteUser);
 

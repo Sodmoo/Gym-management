@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useUserStore } from "../store/userStore";
+import { useUserStore } from "../../store/userStore";
 import { Loader2, Trash2 } from "lucide-react";
 
 const DeleteUserForm = ({ user, onClose }) => {

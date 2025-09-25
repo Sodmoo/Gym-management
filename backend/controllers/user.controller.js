@@ -52,9 +52,12 @@ export const alluser = async (req, res) => {
             extra.profileImage
           }`;
         }
+        // Rename extra._id to memberId to avoid overwriting user._id
+        const { _id: memberId, ...extraRest } = extra || {};
         return {
-          ...user,
-          ...(extra || {}),
+          ...user, // user._id is the User's id
+          memberId, // memberId is the Member's id
+          ...extraRest,
           profileImage,
         };
       })
@@ -67,21 +70,11 @@ export const alluser = async (req, res) => {
   }
 };
 
-export const alltrainer = async (req, res) => {
-  try {
-    const trainers = await User.find({ role: "trainer" }).lean();
-    res.json(trainers);
-  } catch (error) {
-    console.error("Error in alltrainer:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
 export const createUser = async (req, res) => {
+  const { surname, username, email, password, role, gender } = req.body;
   try {
-    const { surname, username, email, password, role, gender } = req.body;
-    if (!surname || !username || !email || !password || !role || !gender) {
-      return res.status(400).json({ message: "All fields are required" });
+    if (!surname || !username || !email || !password || !role) {
+      return res.status(400).json({ message: "Талбар дутуу байна" });
     }
     const alreadyExists = await User.findOne({ email });
     if (alreadyExists) {
@@ -92,8 +85,9 @@ export const createUser = async (req, res) => {
         .status(400)
         .json({ message: "Нууц үг багадаа 6 оронтой байна" });
     }
+
     const hashedPassword = await bcryptjs.hash(password, 10);
-    const newUser = new User({
+    const user = new User({
       surname,
       username,
       email,
@@ -101,13 +95,13 @@ export const createUser = async (req, res) => {
       role,
       gender,
     });
-    await newUser.save();
-    res
-      .status(201)
-      .json({ message: "User created successfully", userId: newUser._id });
+    await user.save();
+    const newMember = new Member({ userId: user._id });
+    await newMember.save();
+
+    res.status(201).json({ message: "Хэрэглэгч амжилттай үүсгэлээ" });
   } catch (error) {
-    console.error("Error in createUser:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("алдаа гарлаа", error);
   }
 };
 
@@ -130,14 +124,72 @@ export const updateUser = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
-    const { id } = req.params;
-    const deletedUser = await User.findByIdAndDelete(id).lean().exec();
-    if (!deletedUser) {
-      return res.status(404).json({ message: "User not found" });
+    const user = await User.findById(req.params.id);
+    await User.findByIdAndDelete(req.params.id);
+
+    if (user.role === "user") {
+      await Member.findOneAndDelete({ userId: user._id });
+    } else if (user.role === "trainer") {
+      await Trainer.findOneAndDelete({ userId: user._id });
     }
+
     res.json({ message: "User deleted successfully" });
   } catch (error) {
     console.error("Error in deleteUser:", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const alltrainer = async (req, res) => {
+  try {
+    const users = await User.find({ role: "trainer" }).lean();
+    const trainersWithExtra = await Promise.all(
+      users.map(async (user) => {
+        const extra = await Trainer.findOne({ userId: user._id }).lean();
+        return {
+          ...user,
+          ...(extra || {}),
+        };
+      })
+    );
+    res.json(trainersWithExtra);
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const trainerConfirm = async (req, res) => {
+  try {
+    const { id } = req.params; // id is the User's _id
+    const trainer = await Trainer.findByIdAndUpdate(
+      id,
+      { isconfirmed: true },
+      { new: true }
+    )
+      .lean()
+      .exec();
+    res.json({
+      success: true,
+      trainer,
+      message: "Тренерийг амжилттай баталгаажууллаа",
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+export const trainerReject = async (req, res) => {
+  try {
+    const { id } = req.params; // id is the User's _id
+    const trainer = await Trainer.findByIdAndUpdate(
+      id,
+      { isconfirmed: false },
+      { new: true }
+    )
+      .lean()
+      .exec();
+    res.json({ success: true, trainer, message: "Тренерийг хаслаа" });
+  } catch (error) {
+    res.status(500).json({ error: "Something went wrong" });
   }
 };

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useUserStore } from "../store/userStore";
+import { useUserStore } from "../../store/userStore";
 import { Loader2 } from "lucide-react";
 
 const CreateUserForm = ({ onClose }) => {
@@ -123,7 +123,6 @@ const CreateUserForm = ({ onClose }) => {
               className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-base text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
             >
               <option value="user">User</option>
-              <option value="trainer">Trainer</option>
             </select>
           </div>
           <div>
@@ -146,7 +145,7 @@ const CreateUserForm = ({ onClose }) => {
           </div>
         </div>
 
-        <div className="flex gap-3 justify-end pt-2">
+        <div className="flex gap-4 justify-end pt-2">
           <button
             type="button"
             onClick={onClose}

@@ -43,6 +43,16 @@ const trainerSchema = new mongoose.Schema(
       type: [String],
       default: [],
     }, // массив хэлбэрээр
+    isconfirmed: {
+      type: Boolean,
+      default: false,
+    },
+    students: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   { timestamps: true }
 );

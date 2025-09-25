@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useUserStore } from "../store/userStore";
+import { useUserStore } from "../../store/userStore";
 import { Loader2 } from "lucide-react";
 
 const EditUserForm = ({ user, onClose }) => {
