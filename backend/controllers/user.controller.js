@@ -96,8 +96,13 @@ export const createUser = async (req, res) => {
       gender,
     });
     await user.save();
-    const newMember = new Member({ userId: user._id });
-    await newMember.save();
+    if (role === "trainer") {
+      const newTrainer = new Trainer({ userId: user._id });
+      await newTrainer.save();
+    } else if (role === "user") {
+      const newMember = new Member({ userId: user._id });
+      await newMember.save();
+    }
 
     res.status(201).json({ message: "Хэрэглэгч амжилттай үүсгэлээ" });
   } catch (error) {

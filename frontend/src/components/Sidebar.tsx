@@ -35,7 +35,7 @@ const Sidebar = () => {
       : [];
 
   return (
-    <nav className="w-72 bg-white rounded-2xl shadow-2xl p-6 flex flex-col gap-6 h-full min-h-[90vh]">
+    <nav className="w-72 bg-black rounded-2xl shadow-2xl p-6 flex flex-col gap-6 h-full min-h-[90vh]">
       {/* Logo */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow">

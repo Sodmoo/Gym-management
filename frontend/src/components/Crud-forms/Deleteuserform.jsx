@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { useUserStore } from "../../store/userStore";
 import { Loader2, Trash2 } from "lucide-react";
-import { trainerStore } from "../../store/trainerStore";
+import { useTrainerStore } from "../../store/trainerStore";
 
 const DeleteUserForm = ({ user, onClose }) => {
   const { deleteUser, isLoading, getAllUsers } = useUserStore();
-  const { getAllTrainers } = trainerStore();
+  const { getAllTrainers } = useTrainerStore();
   const [confirmEmail, setConfirmEmail] = useState("");
 
   const handleSubmit = async (e) => {

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios.js";
 
-export const trainerStore = create((set) => ({
+export const useTrainerStore = create((set) => ({
   isLoading: false,
   trainers: [],
   setTrainers: (trainers) => set({ trainers }),
@@ -25,7 +25,7 @@ export const trainerStore = create((set) => ({
         `/users/trainer_confirm/${trainerId}`
       );
       console.log("Trainer confirmed:", res.data);
-      await trainerStore.getState().getAllTrainers();
+      await useTrainerStore.getState().getAllTrainers();
       return true;
     } catch (error) {
       console.error("Error confirming trainer:", error);
@@ -39,7 +39,7 @@ export const trainerStore = create((set) => ({
     try {
       const res = await axiosInstance.put(`/users/trainer_reject/${trainerId}`);
       console.log("Trainer rejected:", res.data);
-      await trainerStore.getState().getAllTrainers();
+      await useTrainerStore.getState().getAllTrainers();
       return true;
     } catch (error) {
       console.error("Error confirming trainer:", error);

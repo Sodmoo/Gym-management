@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { useUserStore } from "../../store/userStore";
+import { useTrainerStore } from "../../store/trainerStore";
 import { Loader2 } from "lucide-react";
 
 const CreateUserForm = ({ onClose }) => {
   const { createUser, isLoading, getAllUsers } = useUserStore();
+  const { getAllTrainers } = useTrainerStore();
   const [form, setForm] = useState({
     surname: "",
     username: "",
@@ -19,7 +21,11 @@ const CreateUserForm = ({ onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     await createUser(form);
-    getAllUsers();
+    if (form.role === "user") {
+      await getAllUsers();
+    } else if (form.role === "trainer") {
+      await getAllTrainers();
+    }
     onClose();
   };
 

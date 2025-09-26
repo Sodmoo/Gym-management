@@ -1,34 +1,40 @@
 import React from "react";
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, Eye, Check, Minus } from "lucide-react";
+import { Pencil, Trash2, Eye, Check, Minus, Loader } from "lucide-react";
 import Modal from "../../../components/Modal";
-import { trainerStore } from "../../../store/trainerStore";
-import EditTrainerForm from "../../../components/Crud-Trainer/Edittrainerform.jsx";
-import DeleteUserForm from "../../../components/Crud-User/Deleteuserform.jsx";
-import CreateTrainerForm from "../../../components/Crud-Trainer/Createtrainerform.jsx";
-import ShowTrainerForm from "../../../components/Crud-Trainer/Showtrainerform.jsx";
+import { useTrainerStore } from "../../../store/trainerStore";
+import EditUserForm from "../../../components/Crud-forms/Edituserform.jsx";
+import DeleteUserForm from "../../../components/Crud-forms/Deleteuserform.jsx";
+import CreateUserForm from "../../../components/Crud-forms/Createuserform.jsx";
+import Showuserform from "../../../components/Crud-forms/Showuserform.jsx";
 
 const Trainers = () => {
-  const { trainers, confirmTrainer, getAllTrainers, rejectTrainer } =
-    trainerStore();
+  const { trainers, confirmTrainer, getAllTrainers, rejectTrainer, isLoading } =
+    useTrainerStore();
   const [selectedUser, setSelectedUser] = useState(null);
   const [iseditModalOpen, seteditModalOpen] = useState(false);
   const [isdeleteModalOpen, setdeleteModalOpen] = useState(false);
   const [iscreateModalOpen, setcreateModalOpen] = useState(false);
   const [isshowModalOpen, setshowModalOpen] = useState(false);
+  const [confirmingId, setConfirmingId] = useState(null);
+  const [rejectingId, setRejectingId] = useState(null);
 
   useEffect(() => {
     getAllTrainers();
   }, [getAllTrainers]);
 
   const handleAccept = async (userId) => {
-    await confirmTrainer(userId); // This should call PATCH /users/:id/confirm
-    await trainerStore.getState().getAllTrainers(); // Refetch trainers to update UI
+    setConfirmingId(userId);
+    await confirmTrainer(userId);
+    await getAllTrainers();
+    setConfirmingId(null);
   };
 
   const handleReject = async (userId) => {
+    setRejectingId(userId);
     await rejectTrainer(userId); // This should call PATCH /users/:id/confirm
-    await trainerStore.getState().getAllTrainers(); // Refetch trainers to update UI
+    await getAllTrainers();
+    setRejectingId(null);
   };
 
   const handleEdit = (user) => {
@@ -79,7 +85,7 @@ const Trainers = () => {
               <th className="px-4 py-2 font-medium">Имэйл</th>
               <th className="px-4 py-2 font-medium">Хүйс</th>
               <th className="px-4 py-2 font-medium">Бүртгэсэн огноо</th>
-              <th className="px-4 py-2 font-medium">Баталгаажсан</th>
+              <th className="px-4 py-2 font-medium">Эрх</th>
               <th className="px-4 py-2 font-medium">Үйлчлүүлэгч</th>
               <th className="px-4 py-2 font-medium text-center">Үйлдэл</th>
             </tr>
@@ -138,14 +144,25 @@ const Trainers = () => {
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
+
                       {!user.isconfirmed ? (
-                        <button
-                          className="p-2 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition"
-                          title="Баталгаажуулах"
-                          onClick={() => handleAccept(user._id)}
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
+                        confirmingId === user._id && isLoading ? (
+                          <span className="p-2 flex items-center justify-center">
+                            <Loader className="animate-spin w-4 h-4 text-blue-600" />
+                          </span>
+                        ) : (
+                          <button
+                            className="p-2 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition"
+                            title="Баталгаажуулах"
+                            onClick={() => handleAccept(user._id)}
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                        )
+                      ) : rejectingId === user._id && isLoading ? (
+                        <span className="p-2 flex items-center justify-center">
+                          <Loader className="animate-spin w-4 h-4 text-blue-600" />
+                        </span>
                       ) : (
                         <button
                           className="p-2 rounded-lg bg-red-200 text-red-500 hover:bg-red-300 transition"
@@ -175,7 +192,7 @@ const Trainers = () => {
       {/* --- Modal for Edit --- */}
       <Modal isOpen={iseditModalOpen} onClose={() => seteditModalOpen(false)}>
         {selectedUser && (
-          <EditTrainerForm
+          <EditUserForm
             user={selectedUser}
             onClose={() => seteditModalOpen(false)}
           />
@@ -200,13 +217,13 @@ const Trainers = () => {
         isOpen={iscreateModalOpen}
         onClose={() => setcreateModalOpen(false)}
       >
-        <CreateTrainerForm onClose={() => setcreateModalOpen(false)} />
+        <CreateUserForm onClose={() => setcreateModalOpen(false)} />
       </Modal>
 
       {/* --- Modal for Show --- */}
       <Modal isOpen={isshowModalOpen} onClose={() => setshowModalOpen(false)}>
         {selectedUser && (
-          <ShowTrainerForm
+          <Showuserform
             user={selectedUser}
             onClose={() => setshowModalOpen(false)}
           />

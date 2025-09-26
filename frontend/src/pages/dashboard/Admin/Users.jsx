@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useUserStore } from "../../../store/userStore";
 import { Pencil, Trash2, Eye } from "lucide-react";
 import Modal from "../../../components/Modal";
-import EditUserForm from "../../../components/Crud-User/Edituserform.jsx";
-import DeleteUserForm from "../../../components/Crud-User/Deleteuserform.jsx";
-import CreateUserForm from "../../../components/Crud-User/Createuserform.jsx";
-import Showuserform from "../../../components/Crud-User/Showuserform.jsx";
+import EditUserForm from "../../../components/Crud-forms/Edituserform.jsx";
+import DeleteUserForm from "../../../components/Crud-forms/Deleteuserform.jsx";
+import CreateUserForm from "../../../components/Crud-forms/Createuserform.jsx";
+import Showuserform from "../../../components/Crud-forms/Showuserform.jsx";
 
 const Users = () => {
   const { users, getAllUsers } = useUserStore();

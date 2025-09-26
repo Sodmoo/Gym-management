@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useUserStore } from "../../store/userStore";
+import { useTrainerStore } from "../../store/trainerStore";
 import { Loader2 } from "lucide-react";
 
 const EditUserForm = ({ user, onClose }) => {
   const { updateUser, isLoading, getAllUsers } = useUserStore();
+  const { getAllTrainers } = useTrainerStore();
   const [form, setForm] = useState({
     surname: "",
     username: "",
@@ -31,7 +33,11 @@ const EditUserForm = ({ user, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     await updateUser(user._id, form);
-    getAllUsers();
+    if (user.role === "user") {
+      await getAllUsers();
+    } else if (user.role === "trainer") {
+      await getAllTrainers();
+    }
     onClose();
   };
 
