@@ -1,7 +1,7 @@
 import React from "react";
 import { useEffect, useState } from "react";
 import { Pencil, Trash2, Eye, Check, Minus, Loader } from "lucide-react";
-import Modal from "../../../components/Modal";
+import Modal from "../../../components/Modal/Modal.jsx";
 import { useTrainerStore } from "../../../store/trainerStore";
 import EditUserForm from "../../../components/Crud-forms/Edituserform.jsx";
 import DeleteUserForm from "../../../components/Crud-forms/Deleteuserform.jsx";

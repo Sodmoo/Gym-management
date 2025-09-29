@@ -18,6 +18,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Users from "./pages/dashboard/Admin/Users";
 import Settings from "./pages/dashboard/Admin/Settings";
 import Trainers from "./pages/dashboard/Admin/Trainers";
+import Equipments from "./pages/dashboard/Admin/Equipments";
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
@@ -139,6 +140,16 @@ const App = () => {
             <ProtectedRoute role="admin">
               <DashboardLayout>
                 <Trainers />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/equipments"
+          element={
+            <ProtectedRoute role="admin">
+              <DashboardLayout>
+                <Equipments />
               </DashboardLayout>
             </ProtectedRoute>
           }

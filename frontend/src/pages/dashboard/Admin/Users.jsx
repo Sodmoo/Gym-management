@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useUserStore } from "../../../store/userStore";
-import { Pencil, Trash2, Eye } from "lucide-react";
-import Modal from "../../../components/Modal";
+import { Pencil, Trash2, Eye, Wallet } from "lucide-react";
+import Modal from "../../../components/Modal/Modal.jsx";
 import EditUserForm from "../../../components/Crud-forms/Edituserform.jsx";
 import DeleteUserForm from "../../../components/Crud-forms/Deleteuserform.jsx";
 import CreateUserForm from "../../../components/Crud-forms/Createuserform.jsx";
 import Showuserform from "../../../components/Crud-forms/Showuserform.jsx";
+import Membershipform from "../../../components/Crud-forms/Membershipform.jsx";
 
 const Users = () => {
   const { users, getAllUsers } = useUserStore();
@@ -14,6 +15,7 @@ const Users = () => {
   const [isdeleteModalOpen, setdeleteModalOpen] = useState(false);
   const [iscreateModalOpen, setcreateModalOpen] = useState(false);
   const [isshowModalOpen, setshowModalOpen] = useState(false);
+  const [isMembershipOpen, setMembershipModalOpen] = useState(false);
 
   useEffect(() => {
     getAllUsers();
@@ -38,6 +40,20 @@ const Users = () => {
     setshowModalOpen(true);
   };
 
+  const handleMembership = (user) => {
+    setSelectedUser(user);
+    setMembershipModalOpen(true);
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
+    const date = new Date(dateStr);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   return (
     <div className="bg-white p-6 rounded-xl shadow-md h-full">
       <div className="flex justify-between items-center mb-6">
@@ -60,12 +76,10 @@ const Users = () => {
           <thead className="bg-green-300 ">
             <tr className="text-blue-700 text-sm">
               <th className="px-4 py-2 font-medium">#</th>
-              <th className="px-4 py-2 font-medium">Овог</th>
               <th className="px-4 py-2 font-medium">Нэр</th>
-              <th className="px-4 py-2 font-medium">Имэйл</th>
-              <th className="px-4 py-2 font-medium">Хүйс</th>
-              <th className="px-4 py-2 font-medium">Бүртгэсэн огноо</th>
-              <th className="px-4 py-2 font-medium">Баталгаажсан</th>
+              <th className="px-4 py-2 font-medium">Элссэн огноо</th>
+              <th className="px-4 py-2 font-medium">Membership Status</th>
+              <th className="px-4 py-2 font-medium">Membership Дуусах огноо</th>
               <th className="px-4 py-2 font-medium text-center">Үйлдэл</th>
             </tr>
           </thead>
@@ -77,23 +91,21 @@ const Users = () => {
                   className="bg-white hover:bg-gray-50 rounded-lg shadow-sm"
                 >
                   <td className="px-4 py-3">{index + 1}</td>
-                  <td className="px-4 py-3">{user.surname}</td>
                   <td className="px-4 py-3">{user.username}</td>
-                  <td className="px-4 py-3">{user.email}</td>
-                  <td className="px-4 py-3 capitalize">{user.gender}</td>
+                  <td className="px-4 py-3">{formatDate(user.createdAt)}</td>
                   <td className="px-4 py-3">
-                    {new Date(user.createdAt).toLocaleDateString("mn-MN")}
-                  </td>
-                  <td className="px-4 py-3">
-                    {user.profileCompleted ? (
+                    {user.membership?.isActive ? (
                       <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
                         Active
                       </span>
                     ) : (
                       <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">
-                        Inactive
+                        Expired
                       </span>
                     )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {formatDate(user.membership?.endDate)}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex gap-2 justify-center">
@@ -117,6 +129,13 @@ const Users = () => {
                         onClick={() => handleDelete(user)}
                       >
                         <Trash2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        className="p-2 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition"
+                        title="Membership"
+                        onClick={() => handleMembership(user)}
+                      >
+                        <Wallet className="w-4 h-4" />
                       </button>
                     </div>
                   </td>
@@ -173,6 +192,19 @@ const Users = () => {
           <Showuserform
             user={selectedUser}
             onClose={() => setshowModalOpen(false)}
+          />
+        )}
+      </Modal>
+
+      {/* --- Modal for Membership --- */}
+      <Modal
+        isOpen={isMembershipOpen}
+        onClose={() => setMembershipModalOpen(false)}
+      >
+        {selectedUser && (
+          <Membershipform
+            user={selectedUser}
+            onClose={() => setMembershipModalOpen(false)}
           />
         )}
       </Modal>

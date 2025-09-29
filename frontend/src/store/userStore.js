@@ -87,4 +87,25 @@ export const useUserStore = create((set) => ({
       set({ isLoading: false });
     }
   },
+  membershipassign: async (id, membershipData) => {
+    set({ isLoading: true });
+    try {
+      const res = await axiosInstance.put(
+        `/users/membership/${id}`,
+        membershipData
+      );
+      toast.success("Membership амжилттай олголоо", {
+        position: "top-center",
+      });
+      return res.data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Алдаа гарлаа", {
+        position: "top-center",
+      });
+      console.error("Error assigning membership:", error);
+      return null;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
 }));

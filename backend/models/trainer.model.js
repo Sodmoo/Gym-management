@@ -34,15 +34,15 @@ const trainerSchema = new mongoose.Schema(
     experience: {
       type: Number,
       default: 0,
-    }, // туршлагын жил
+    },
     specialization: {
       type: String,
       default: "",
-    }, // фитнесс чиглэл
+    },
     certifications: {
       type: [String],
       default: [],
-    }, // массив хэлбэрээр
+    },
     isconfirmed: {
       type: Boolean,
       default: false,

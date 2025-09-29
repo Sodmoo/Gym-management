@@ -70,46 +70,6 @@ export const alluser = async (req, res) => {
   }
 };
 
-export const createUser = async (req, res) => {
-  const { surname, username, email, password, role, gender } = req.body;
-  try {
-    if (!surname || !username || !email || !password || !role) {
-      return res.status(400).json({ message: "Талбар дутуу байна" });
-    }
-    const alreadyExists = await User.findOne({ email });
-    if (alreadyExists) {
-      return res.status(400).json({ message: "Бүртгэлтэй хэрэглэгч" });
-    }
-    if (password.length < 6) {
-      return res
-        .status(400)
-        .json({ message: "Нууц үг багадаа 6 оронтой байна" });
-    }
-
-    const hashedPassword = await bcryptjs.hash(password, 10);
-    const user = new User({
-      surname,
-      username,
-      email,
-      password: hashedPassword,
-      role,
-      gender,
-    });
-    await user.save();
-    if (role === "trainer") {
-      const newTrainer = new Trainer({ userId: user._id });
-      await newTrainer.save();
-    } else if (role === "user") {
-      const newMember = new Member({ userId: user._id });
-      await newMember.save();
-    }
-
-    res.status(201).json({ message: "Хэрэглэгч амжилттай үүсгэлээ" });
-  } catch (error) {
-    console.error("алдаа гарлаа", error);
-  }
-};
-
 export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
