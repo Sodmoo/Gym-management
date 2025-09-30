@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useEquipmentStore } from "../../store/equipmentStore";
+import { useEquipmentStore } from "../../store/equipmentStore.js";
 import { Loader2 } from "lucide-react";
 
 const CreateEquipmentForm = ({ onClose }) => {

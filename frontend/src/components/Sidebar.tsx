@@ -15,6 +15,7 @@ const Sidebar = () => {
       { path: "/admin/users", label: "Manage Users" },
       { path: "/admin/trainers", label: "Manage Trainers" },
       { path: "/admin/equipments", label: "Manage Equipments" },
+      { path: "/admin/membershiptype", label: "Manage Membership" },
       { path: "/admin/settings", label: "Settings" },
     ],
     trainer: [

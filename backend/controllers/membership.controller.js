@@ -1,3 +1,4 @@
+import MembershipType from "../models/membershipType.model.js";
 import {
   daysFromType,
   addDays,
@@ -10,8 +11,14 @@ export const assignMembership = async (req, res) => {
     const { id } = req.params;
     let { type, duration } = req.body;
 
-    duration = duration ? parseInt(duration, 10) : daysFromType(type);
-    if (!duration || duration <= 0) duration = daysFromType(type);
+    // Find membership type by value
+    const membershipType = await MembershipType.findOne({ label: type });
+    if (!membershipType)
+      return res.status(404).json({ message: "Membership type not found" });
+
+    // Use duration from request or from type
+    duration = duration ? parseInt(duration, 10) : membershipType.days;
+    if (!duration || duration <= 0) duration = membershipType.days;
 
     const now = nowUTC();
 
@@ -32,8 +39,9 @@ export const assignMembership = async (req, res) => {
         ? member.membership.startDate
         : now;
 
+    // Save both label and value
     member.membership = {
-      type,
+      type: membershipType.label,
       startDate,
       endDate: newEndDate,
       isActive: true,

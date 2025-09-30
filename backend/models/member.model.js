@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const membershipSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ["daily", "weekly", "monthly", "yearly"],
+    enum: [],
     default: null,
   },
   startDate: {

@@ -1,22 +1,38 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useUserStore } from "../../store/userStore";
+import { useMembershipTypeStore } from "../../store/membershipTypeStore";
 import { Loader2 } from "lucide-react";
-
-const MEMBERSHIP_TYPES = [
-  { value: "weekly", label: "Энгийн", days: 7 },
-  { value: "monthly", label: "Premium", days: 30 },
-  { value: "yearly", label: "VIP", days: 365 },
-];
 
 const Membershipform = ({ user, onClose }) => {
   const { membershipassign, isLoading, getAllUsers } = useUserStore();
+  const { types, getAllTypes } = useMembershipTypeStore();
+
+  useEffect(() => {
+    getAllTypes();
+  }, [getAllTypes]);
+
   const initialEndDate = user?.membership?.endDate
     ? new Date(user.membership.endDate).toISOString().slice(0, 10)
     : new Date().toISOString().slice(0, 10);
 
-  const [type, setType] = useState(user?.membership?.type || "");
+  const [type, setType] = useState("");
   const [days, setDays] = useState("");
   const [endDate, setEndDate] = useState(initialEndDate);
+
+  useEffect(() => {
+    if (user?.membership?.type && types.length > 0) {
+      setType(user.membership.type);
+      const found = types.find((t) => t.value === user.membership.type);
+      if (found) {
+        setDays(found.days);
+        calculateEndDate(initialEndDate, found.days);
+      }
+    } else {
+      setType("");
+      setDays("");
+      setEndDate(initialEndDate);
+    }
+  }, [user, types]);
 
   // Calculate new end date from current end date
   const calculateEndDate = (baseDate, numDays) => {
@@ -30,26 +46,23 @@ const Membershipform = ({ user, onClose }) => {
   };
 
   const handleTypeChange = (e) => {
-    const selectedType = e.target.value;
-    setType(selectedType);
-    const found = MEMBERSHIP_TYPES.find((t) => t.value === selectedType);
+    const selectedLabel = e.target.value;
+    setType(selectedLabel);
+    const found = types.find((t) => t.label === selectedLabel);
     if (found) {
       setDays(found.days);
       calculateEndDate(initialEndDate, found.days);
+    } else {
+      setDays("");
+      setEndDate(initialEndDate);
     }
-  };
-
-  const handleDaysChange = (e) => {
-    setDays(e.target.value);
-    calculateEndDate(initialEndDate, e.target.value);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     await membershipassign(user._id, {
-      type,
-      endDate,
-      days: Number(days),
+      type, // now this is the label, e.g. "VIP"
+      duration: days, // number of days
     });
     await getAllUsers();
     onClose();
@@ -67,7 +80,7 @@ const Membershipform = ({ user, onClose }) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white p-8  space-y-6 max-w-md mx-auto"
+      className="bg-white p-8 space-y-6 max-w-md mx-auto"
     >
       <h3 className="text-2xl font-bold text-gray-800 text-center mb-2">
         Гишүүнчлэл сунгах / шинэчлэх
@@ -77,10 +90,10 @@ const Membershipform = ({ user, onClose }) => {
         <label className="block text-sm font-semibold text-gray-700 mb-1">
           Гишүүнчлэлийн төрөл
         </label>
-        <select name="type" value={type} onChange={handleTypeChange}>
+        <select name="type" value={type} onChange={handleTypeChange} required>
           <option value="">Сонгох</option>
-          {MEMBERSHIP_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>
+          {types.map((t) => (
+            <option key={t._id} value={t.label}>
               {t.label}
             </option>
           ))}
@@ -96,10 +109,9 @@ const Membershipform = ({ user, onClose }) => {
           name="days"
           min={1}
           value={days}
-          onChange={handleDaysChange}
-          className="w-full rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          readOnly
+          className="w-full rounded-md border border-gray-300 p-2"
           required
-          disabled
         />
       </div>
 
@@ -129,7 +141,7 @@ const Membershipform = ({ user, onClose }) => {
         </button>
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || !type}
           className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50"
         >
           {isLoading ? (
