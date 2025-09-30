@@ -178,3 +178,44 @@ export const trainerReject = async (req, res) => {
     res.status(500).json({ error: "Something went wrong" });
   }
 };
+
+export const allMember = async (req, res) => {
+  try {
+    // User collection-аас role нь member бүх хэрэглэгч
+    const users = await User.find({ role: "user" }).lean();
+
+    const members = await Member.find({ userId: users._id }).lean();
+
+    // Хэрэв Member collection-д нэмэлт талбарууд байгаа бол merge хийнэ
+    const membersWithExtra = await Promise.all(
+      (Array.isArray(members) ? members : []).map(async (user) => {
+        const extra = await Member.findOne({ userId: user._id }).lean();
+        let profileImage = null;
+        let memberId = null;
+        let extraRest = {};
+        if (extra) {
+          memberId = extra._id; // Member-ийн _id
+          const { _id, ...rest } = extra;
+          extraRest = rest;
+          if (extra.profileImage) {
+            profileImage = `${req.protocol}://${req.get("host")}/uploads/${
+              extra.profileImage
+            }`;
+          }
+        }
+
+        return {
+          ...user, // User-ийн бүх талбар
+          memberId, // Member collection-ийн _id
+          ...extraRest, // Бусад Member талбарууд
+          profileImage, // Profile зураг
+        };
+      })
+    );
+
+    res.json(membersWithExtra);
+  } catch (error) {
+    console.error("Error in allMembers:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

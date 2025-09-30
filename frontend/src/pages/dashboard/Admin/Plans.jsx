@@ -5,7 +5,7 @@ import { useMembershipTypeStore } from "../../../store/membershipTypeStore.js";
 import CreateMembershipTypeForm from "../../../components/Membership/CreateMembershipTypeForm.jsx";
 import EditMembershipTypeForm from "../../../components/Membership/EditMembershipTypeForm.jsx";
 
-const MembershipTypes = () => {
+const Plans = () => {
   const { types, isLoading, getAllTypes, deleteType } =
     useMembershipTypeStore();
 
@@ -140,4 +140,4 @@ const MembershipTypes = () => {
   );
 };
 
-export default MembershipTypes;
+export default Plans;

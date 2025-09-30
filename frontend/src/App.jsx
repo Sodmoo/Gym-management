@@ -19,7 +19,7 @@ import Users from "./pages/dashboard/Admin/Users";
 import Settings from "./pages/dashboard/Admin/Settings";
 import Trainers from "./pages/dashboard/Admin/Trainers";
 import Equipments from "./pages/dashboard/Admin/Equipments";
-import MembershipTypes from "./pages/dashboard/Admin/MembershipTypes";
+import Plans from "./pages/dashboard/Admin/Plans";
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
@@ -156,11 +156,11 @@ const App = () => {
           }
         />
         <Route
-          path="/admin/membershiptype"
+          path="/admin/plans"
           element={
             <ProtectedRoute role="admin">
               <DashboardLayout>
-                <MembershipTypes />
+                <Plans />
               </DashboardLayout>
             </ProtectedRoute>
           }

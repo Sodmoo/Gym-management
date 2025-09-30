@@ -8,6 +8,8 @@ import authRoute from "./routes/auth.route.js";
 import userRoute from "./routes/user.route.js";
 import equipmentRoute from "./routes/equipment.route.js";
 import membershipTypeRoute from "./routes/membershipType.route.js";
+import trainerRoute from "./routes/trainer.route.js";
+import memberRoute from "./routes/member.route.js";
 import "./controllers/membership_helper/membership.cron.js";
 
 dotenv.config();
@@ -22,6 +24,8 @@ app.use(cookieParser());
 app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
 app.use("/api/equipment", equipmentRoute);
+app.use("/api/trainers", trainerRoute);
+app.use("/api/members", memberRoute);
 app.use("/uploads", express.static("uploads"));
 app.use("/api/membership-types", membershipTypeRoute);
 

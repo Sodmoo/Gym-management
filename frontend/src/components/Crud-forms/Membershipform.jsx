@@ -22,13 +22,13 @@ const Membershipform = ({ user, onClose }) => {
   useEffect(() => {
     if (user?.membership?.type && types.length > 0) {
       setType(user.membership.type);
-      const found = types.find((t) => t.value === user.membership.type);
+      const found = types.find((t) => t.label === user.membership.type);
       if (found) {
         setDays(found.days);
         calculateEndDate(initialEndDate, found.days);
       }
     } else {
-      setType("");
+      setType(""); // Always reset to empty for new assignment
       setDays("");
       setEndDate(initialEndDate);
     }

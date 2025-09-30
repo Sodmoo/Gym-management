@@ -1,12 +1,13 @@
 import React from "react";
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, Eye, Check, Minus, Loader } from "lucide-react";
+import { Pencil, Trash2, Eye, Check, Minus, Loader, Plus } from "lucide-react";
 import Modal from "../../../components/Modal/Modal.jsx";
 import { useTrainerStore } from "../../../store/trainerStore";
 import EditUserForm from "../../../components/Crud-forms/Edituserform.jsx";
 import DeleteUserForm from "../../../components/Crud-forms/Deleteuserform.jsx";
 import CreateUserForm from "../../../components/Crud-forms/Createuserform.jsx";
 import Showuserform from "../../../components/Crud-forms/Showuserform.jsx";
+import AssignStudentModal from "../../../components/Trainer/AssignMember.jsx";
 
 const Trainers = () => {
   const { trainers, confirmTrainer, getAllTrainers, rejectTrainer, isLoading } =
@@ -15,6 +16,7 @@ const Trainers = () => {
   const [iseditModalOpen, seteditModalOpen] = useState(false);
   const [isdeleteModalOpen, setdeleteModalOpen] = useState(false);
   const [iscreateModalOpen, setcreateModalOpen] = useState(false);
+  const [isAssignOpen, setAssignOpen] = useState(false);
   const [isshowModalOpen, setshowModalOpen] = useState(false);
   const [confirmingId, setConfirmingId] = useState(null);
   const [rejectingId, setRejectingId] = useState(null);
@@ -118,7 +120,19 @@ const Trainers = () => {
                   </td>
 
                   <td className="px-4 py-3 capitalize">
-                    {user.students ? user.students.length : 0}
+                    <div className="flex gap-2 justify-center">
+                      {user.students ? user.students.length : 0}
+                      <button
+                        className="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 transition"
+                        title="Add"
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setAssignOpen(true);
+                        }}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
 
                   <td className="px-4 py-3 text-center">
@@ -226,6 +240,16 @@ const Trainers = () => {
           <Showuserform
             user={selectedUser}
             onClose={() => setshowModalOpen(false)}
+          />
+        )}
+      </Modal>
+
+      {/* Assign Modal */}
+      <Modal isOpen={isAssignOpen} onClose={() => setAssignOpen(false)}>
+        {selectedUser && (
+          <AssignStudentModal
+            trainer={selectedUser}
+            onClose={() => setAssignOpen(false)}
           />
         )}
       </Modal>
