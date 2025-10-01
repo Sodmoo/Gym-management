@@ -180,42 +180,90 @@ export const trainerReject = async (req, res) => {
 };
 
 export const allMember = async (req, res) => {
+  // Renamed to plural for clarity
   try {
-    // User collection-аас role нь member бүх хэрэглэгч
-    const users = await User.find({ role: "user" }).lean();
+    // Fetch all Members and populate userId to get full User data
+    const members = await Member.find()
+      .populate(
+        "userId",
+        "surname username email role gender profileCompleted resetToken resetTokenExpiry createdAt updatedAt"
+      ) // Select only needed User fields
+      .lean();
 
-    const members = await Member.find({ userId: users._id }).lean();
-
-    // Хэрэв Member collection-д нэмэлт талбарууд байгаа бол merge хийнэ
-    const membersWithExtra = await Promise.all(
-      (Array.isArray(members) ? members : []).map(async (user) => {
-        const extra = await Member.findOne({ userId: user._id }).lean();
-        let profileImage = null;
-        let memberId = null;
-        let extraRest = {};
-        if (extra) {
-          memberId = extra._id; // Member-ийн _id
-          const { _id, ...rest } = extra;
-          extraRest = rest;
-          if (extra.profileImage) {
-            profileImage = `${req.protocol}://${req.get("host")}/uploads/${
-              extra.profileImage
-            }`;
-          }
-        }
-
-        return {
-          ...user, // User-ийн бүх талбар
-          memberId, // Member collection-ийн _id
-          ...extraRest, // Бусад Member талбарууд
-          profileImage, // Profile зураг
-        };
-      })
+    // Filter to only include those with user.role === "user" (members)
+    const filteredMembers = members.filter(
+      (m) => m.userId && m.userId.role === "user"
     );
+
+    // Merge and construct response
+    const membersWithExtra = filteredMembers.map((member) => {
+      const user = member.userId; // Populated User object
+      let profileImage = null;
+      if (member.profileImage) {
+        profileImage = `${req.protocol}://${req.get("host")}/uploads/${
+          member.profileImage
+        }`;
+      }
+
+      // Merge: User fields + Member fields (exclude userId since it's ref)
+      const { userId, ...memberRest } = member;
+      return {
+        ...user, // All User fields
+        memberId: member._id, // Member's own _id
+        ...memberRest, // Other Member fields (age, phone, etc.)
+        profileImage,
+      };
+    });
 
     res.json(membersWithExtra);
   } catch (error) {
     console.error("Error in allMembers:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Get a single trainer by trainerId (Trainer's _id)
+export const getTrainerById = async (req, res) => {
+  try {
+    const { id } = req.params; // id is trainerId (Trainer's _id)
+    // Find the Trainer document
+    const trainer = await Trainer.findById(id).lean();
+    if (!trainer) return res.status(404).json({ message: "Trainer not found" });
+
+    // Find the User document for this trainer
+    const user = await User.findById(trainer.userId).lean();
+
+    // Merge User and Trainer info
+    let profileImage = null;
+    if (trainer.profileImage) {
+      profileImage = `${req.protocol}://${req.get("host")}/uploads/${
+        trainer.profileImage
+      }`;
+    }
+
+    // Populate students with Member info
+    const students = await Promise.all(
+      (trainer.students || []).map(async (studentId) => {
+        const member = await Member.findById(studentId).lean();
+        if (!member) return null;
+        const user = await User.findById(member.userId).lean();
+        return {
+          ...user,
+          memberId: member._id,
+          ...member,
+        };
+      })
+    );
+
+    res.json({
+      ...user,
+      trainerId: trainer._id,
+      ...trainer,
+      profileImage,
+      students: students.filter(Boolean), // Remove nulls
+    });
+  } catch (error) {
+    console.error("Error in getTrainerById:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

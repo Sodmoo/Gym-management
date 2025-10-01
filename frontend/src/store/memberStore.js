@@ -7,7 +7,7 @@ export const useMemberStore = create((set) => ({
   getAllMembers: async () => {
     set({ isLoading: true });
     try {
-      const res = await axiosInstance.get("/users/alluser");
+      const res = await axiosInstance.get("/members/allmember");
       set({ members: res.data });
       return true;
     } catch (error) {

@@ -2,10 +2,16 @@ import React, { useEffect, useState, useRef } from "react";
 import { useUserStore } from "../store/userStore.js";
 import { useAuthStore } from "../store/authStore.js";
 import { useNavigate } from "react-router-dom";
-import { User as UserIcon, LogOut, Inbox, Wallet } from "lucide-react";
+import {
+  User as UserIcon,
+  LogOut,
+  Inbox,
+  Wallet,
+  Calendar,
+} from "lucide-react";
 
 const Header = (props) => {
-  const { isLoading, logout } = useAuthStore();
+  const { isLoading, logout, authUser } = useAuthStore();
   const { user } = useUserStore();
   const navigate = useNavigate();
   const [dateString, setDateString] = useState("");
@@ -23,8 +29,6 @@ const Header = (props) => {
 
   useEffect(() => {
     const today = new Date();
-
-    // Монгол гарагийн нэрс
     const weekdays = [
       "Ням",
       "Даваа",
@@ -40,8 +44,6 @@ const Header = (props) => {
     const day = today.getDate();
     const weekday = weekdays[today.getDay()];
     const formattedMonth = month < 10 ? `0${month}` : `${month}`;
-
-    // "2025 9 сарын 23, Мягмар гариг"
     setDateString(`${year} : ${formattedMonth} : ${day} ${weekday} гариг`);
   }, []);
 
@@ -72,15 +74,15 @@ const Header = (props) => {
 
   return (
     <header className="flex items-center justify-between mt-6 pl-4 pr-6">
-      <div className="flex items-center gap-2 ">
+      <div className="flex items-center gap-2">
         <button
-          className="lg:hidden ml-4  rounded-md hover:bg-gray-100 p-2 transition"
+          className="lg:hidden ml-4 rounded-md hover:bg-gray-100 p-2 transition"
           onClick={props.onMenuClick}
         >
           ☰
         </button>
 
-        <div className=" ml-2 hidden sm:block mt-2 mb-2">
+        <div className="ml-2 hidden sm:block mt-2 mb-2">
           <h2 className="text-xl md:text-2xl font-bold">
             Эргээд тавтай морил{" "}
             <span className="text-green-400">{user?.username}</span>
@@ -89,14 +91,13 @@ const Header = (props) => {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 relative " ref={menuRef}>
-        {/* Username + Role */}
+      {/* Avatar + Dropdown */}
+      <div className="flex items-center gap-2 relative" ref={menuRef}>
         <div className="hidden sm:block text-right">
           <div className="text-sm font-medium">{user?.username}</div>
           <div className="text-xs text-gray-400">{user?.role}</div>
         </div>
 
-        {/* Avatar */}
         <div
           className="flex items-center cursor-pointer p-0.5 hover:bg-green-300 rounded-full transition"
           onClick={() => setMenuOpen(!menuOpen)}
@@ -114,10 +115,8 @@ const Header = (props) => {
           )}
         </div>
 
-        {/* Dropdown */}
         {menuOpen && (
           <div className="absolute top-15 right-0 w-60 bg-white shadow-lg rounded border-1 border-green-300 py-2 z-50">
-            {/* Top user info */}
             <div className="p-3 border-b">
               <div className="flex items-center gap-2">
                 {user?.profileImage ? (
@@ -147,23 +146,33 @@ const Header = (props) => {
                 View Profile
               </button>
             </div>
-            {/* Menu items */}
             <div className="flex flex-col text-sm gap-1 m-2">
-              <button
-                onClick={() => alert("Balance clicked")}
-                className="flex items-center gap-3 px-4 py-2 text-left rounded-md hover:bg-gray-100 transition"
-              >
-                <Wallet className="w-5 h-5 text-gray-600" />
-                <span>My Balance</span>
-              </button>
-
-              <button
-                onClick={() => alert("Inbox clicked")}
-                className="flex items-center gap-3 px-4 py-2 text-left rounded-md hover:bg-gray-100 transition"
-              >
-                <Inbox className="w-5 h-5 text-gray-600" />
-                <span>Inbox</span>
-              </button>
+              {authUser.role === "admin" ? (
+                <button
+                  onClick={() => alert("Inbox clicked")}
+                  className="flex items-center gap-3 px-4 py-2 text-left rounded-md hover:bg-gray-100 transition"
+                >
+                  <Inbox className="w-5 h-5 text-gray-600" />
+                  <span>Inbox</span>
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => alert("Balance clicked")}
+                    className="flex items-center gap-3 px-4 py-2 text-left rounded-md hover:bg-gray-100 transition"
+                  >
+                    <Wallet className="w-5 h-5 text-gray-600" />
+                    <span>My Balance</span>
+                  </button>
+                  <button
+                    onClick={() => alert("Inbox clicked")}
+                    className="flex items-center gap-3 px-4 py-2 text-left rounded-md hover:bg-gray-100 transition"
+                  >
+                    <Inbox className="w-5 h-5 text-gray-600" />
+                    <span>Inbox</span>
+                  </button>
+                </>
+              )}
 
               <button
                 onClick={handleLogout}

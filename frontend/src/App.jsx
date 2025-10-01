@@ -7,7 +7,7 @@ import ResetPassword from "./pages/auth/resetPassword";
 import Setup_profile from "./pages/ProfileSetup/Setup_profile";
 import A_Dashboard from "./pages/dashboard/Admin/A_dashboard";
 import T_Dashboard from "./pages/dashboard/T_dashboard";
-import U_Dashboard from "./pages/dashboard/U_dashboard";
+import U_Dashboard from "./pages/dashboard/User/U_dashboard";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
 import { Loader } from "lucide-react";
@@ -93,6 +93,8 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* User routes */}
         <Route
           path="/user/*"
           element={

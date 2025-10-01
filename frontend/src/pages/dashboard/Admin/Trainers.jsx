@@ -5,7 +5,7 @@ import Modal from "../../../components/Modal/Modal.jsx";
 import { useTrainerStore } from "../../../store/trainerStore";
 import EditUserForm from "../../../components/Crud-forms/Edituserform.jsx";
 import DeleteUserForm from "../../../components/Crud-forms/Deleteuserform.jsx";
-import CreateUserForm from "../../../components/Crud-forms/Createuserform.jsx";
+import CreateTrainerForm from "../../../components/Trainer/CreateTrainerForm.jsx";
 import Showuserform from "../../../components/Crud-forms/Showuserform.jsx";
 import AssignStudentModal from "../../../components/Trainer/AssignMember.jsx";
 
@@ -119,12 +119,14 @@ const Trainers = () => {
                     )}
                   </td>
 
-                  <td className="px-4 py-3 capitalize">
-                    <div className="flex gap-2 justify-center">
-                      {user.students ? user.students.length : 0}
+                  <td className="p-3 capitalize">
+                    <div className="flex items-center gap-3 justify-center">
+                      <span className="inline-flex items-center p-2 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                        {user.students ? user.students.length : 0}{" "}
+                      </span>
                       <button
-                        className="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 transition"
-                        title="Add"
+                        className="p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 transition"
+                        title="Үйлчлүүлэгч нэмэх"
                         onClick={() => {
                           setSelectedUser(user);
                           setAssignOpen(true);
@@ -231,7 +233,7 @@ const Trainers = () => {
         isOpen={iscreateModalOpen}
         onClose={() => setcreateModalOpen(false)}
       >
-        <CreateUserForm onClose={() => setcreateModalOpen(false)} />
+        <CreateTrainerForm onClose={() => setcreateModalOpen(false)} />
       </Modal>
 
       {/* --- Modal for Show --- */}

@@ -1,46 +1,85 @@
-// components/AssignStudentModal.jsx
 import { useState, useEffect } from "react";
 import { useTrainerStore } from "../../store/trainerStore";
 import { useMemberStore } from "../../store/memberStore";
 
 const AssignStudentModal = ({ trainer, onClose }) => {
-  const { assignStudent, removeStudent } = useTrainerStore();
+  const { assignStudent, removeStudent, trainers, setTrainers } =
+    useTrainerStore();
   const { members, getAllMembers, isLoading } = useMemberStore();
   const [search, setSearch] = useState("");
   const [removingId, setRemovingId] = useState(null);
-
-  let siggned = [trainer.students?.map(String) || []];
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     getAllMembers();
   }, [getAllMembers]);
 
-  // Filter members by search
   const filteredMembers = members.filter(
     (m) =>
       m.username?.toLowerCase().includes(search.toLowerCase()) ||
       m.email?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Split members into assigned and unassigned
+  const normalizeId = (id) => (id ? String(id) : null);
+
+  const latestTrainer =
+    trainers.find((t) => t.trainerId === trainer.trainerId) || trainer;
+
+  const studentIds = latestTrainer.students?.map(normalizeId) || [];
+
   const assignedMembers = filteredMembers.filter((m) =>
-    trainer.students?.map(String).includes(m._id.toString())
+    studentIds.includes(normalizeId(m._id))
   );
 
   const unassignedMembers = filteredMembers.filter(
-    (m) => !trainer.students?.map(String).includes(m._id.toString())
+    (m) => !studentIds.includes(normalizeId(m._id))
   );
 
   const handleAssign = async (member) => {
-    await assignStudent(trainer.userId, member.userId); // use member.userId for API
-    onClose();
+    setActionLoading(true);
+    try {
+      const success = await assignStudent(latestTrainer.trainerId, member._id);
+      if (success) {
+        // 🟢 UI-г шууд шинэчлэх
+        setTrainers(
+          trainers.map((t) =>
+            t.trainerId === latestTrainer.trainerId
+              ? { ...t, students: [...(t.students || []), member._id] }
+              : t
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Assign failed:", error);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleRemove = async (member) => {
     setRemovingId(member._id);
-    await removeStudent(trainer.userId, member.userId); // use member.userId for API
-    setRemovingId(null);
-    onClose();
+    try {
+      const success = await removeStudent(latestTrainer.trainerId, member._id);
+      if (success) {
+        // 🟢 UI-г шууд шинэчлэх
+        setTrainers(
+          trainers.map((t) =>
+            t.trainerId === latestTrainer.trainerId
+              ? {
+                  ...t,
+                  students: t.students.filter(
+                    (id) => normalizeId(id) !== normalizeId(member._id)
+                  ),
+                }
+              : t
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Remove failed:", error);
+    } finally {
+      setRemovingId(null);
+    }
   };
 
   return (
@@ -48,6 +87,11 @@ const AssignStudentModal = ({ trainer, onClose }) => {
       <h2 className="font-semibold mb-2">
         {trainer.username} -д үйлчлүүлэгч нэмэх/хасах
       </h2>
+
+      <p className="text-sm text-gray-500 mb-2">
+        Хуваарилагдсан: {assignedMembers.length} | Боломжтой:{" "}
+        {unassignedMembers.length}
+      </p>
 
       <input
         type="text"
@@ -62,8 +106,7 @@ const AssignStudentModal = ({ trainer, onClose }) => {
           <li className="text-center text-gray-400">Ачааллаж байна...</li>
         ) : (
           <>
-            {/* Assigned members (green, with delete button) */}
-            {assignedMembers.length > 0 && (
+            {assignedMembers.length > 0 ? (
               <>
                 <li className="font-bold text-green-700 mb-1">
                   Хуваарилагдсан үйлчлүүлэгчид:
@@ -78,7 +121,7 @@ const AssignStudentModal = ({ trainer, onClose }) => {
                       <span className="text-xs ml-2">(already assigned)</span>
                     </span>
                     <button
-                      className="px-3 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 transition"
+                      className="px-3 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 transition disabled:opacity-50"
                       onClick={() => handleRemove(member)}
                       disabled={removingId === member._id}
                     >
@@ -87,9 +130,14 @@ const AssignStudentModal = ({ trainer, onClose }) => {
                   </li>
                 ))}
               </>
+            ) : (
+              unassignedMembers.length > 0 && (
+                <li className="text-center text-gray-400 italic mb-2">
+                  Одоо хуваарилагдсан үйлчлүүлэгч байхгүй
+                </li>
+              )
             )}
 
-            {/* Unassigned members (red, with add button) */}
             {unassignedMembers.length > 0 && (
               <>
                 <li className="font-bold text-red-700 mb-1">
@@ -104,20 +152,24 @@ const AssignStudentModal = ({ trainer, onClose }) => {
                       {member.username} ({member.email})
                     </span>
                     <button
-                      className="px-3 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition"
+                      className="px-3 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition disabled:opacity-50"
                       onClick={() => handleAssign(member)}
+                      disabled={actionLoading}
                     >
-                      Нэмэх
+                      {actionLoading ? "Нэмэж байна..." : "Нэмэх"}
                     </button>
                   </li>
                 ))}
               </>
             )}
 
-            {/* If no members found */}
-            {assignedMembers.length === 0 && unassignedMembers.length === 0 && (
-              <li className="text-center text-gray-400">Хэрэглэгч олдсонгүй</li>
-            )}
+            {assignedMembers.length === 0 &&
+              unassignedMembers.length === 0 &&
+              !isLoading && (
+                <li className="text-center text-gray-400">
+                  Хэрэглэгч олдсонгүй
+                </li>
+              )}
           </>
         )}
       </ul>

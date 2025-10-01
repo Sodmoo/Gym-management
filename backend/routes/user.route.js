@@ -8,6 +8,7 @@ import {
   trainerConfirm,
   trainerReject,
   allMember,
+  getTrainerById,
 } from "../controllers/user.controller.js";
 import { register } from "../controllers/auth.controller.js";
 import { assignMembership } from "../controllers/membership.controller.js";
@@ -19,6 +20,7 @@ router.get("/me", verifyToken, userinfo);
 router.get("/alluser", verifyToken, alluser);
 router.get("/alltrainer", verifyToken, alltrainer);
 router.get("/allmember", verifyToken, allMember);
+router.get("/trainer/:id", getTrainerById);
 
 router.post("/create", verifyToken, register);
 
