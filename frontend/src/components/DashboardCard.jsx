@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Users, DollarSign, Dumbbell, ClipboardList } from "lucide-react";
+import { Users, Dumbbell, ClipboardList, GraduationCap } from "lucide-react";
 import { useUserStore } from "../store/userStore.js";
 import { useTrainerStore } from "../store/trainerStore.js";
 import { useEquipmentStore } from "../store/equipmentStore.js";
@@ -34,12 +34,12 @@ const DashboardCards = () => {
     {
       title: "Equipments",
       value: equipments.length,
-      icon: <DollarSign className="w-6 h-6 text-green-600" />,
+      icon: <Dumbbell className="w-6 h-6 text-green-600" />,
     },
     {
       title: "Trainers",
       value: trainers.length,
-      icon: <Dumbbell className="w-6 h-6 text-orange-600" />,
+      icon: <GraduationCap className="w-6 h-6 text-orange-600" />,
     },
     {
       title: "Plans",

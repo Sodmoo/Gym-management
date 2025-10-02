@@ -23,7 +23,7 @@ const DashboardLayout = ({ children }) => {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-h-screen transition-all duration-200">
+      <main className="flex-1 flex flex-col min-h-screen transition-all duration-200 ">
         <Header onMenuClick={() => setOpen(true)} />
         <div className="flex-1 mt-2 px-2 md:px-6 pb-6">{children}</div>
       </main>

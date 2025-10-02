@@ -78,3 +78,84 @@ export const removeStudentFromTrainer = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+export const trainerConfirm = async (req, res) => {
+  try {
+    const { id } = req.params; // id is the User's _id
+    const trainer = await Trainer.findOneAndUpdate(
+      { userId: id },
+      { isconfirmed: true },
+      { new: true }
+    )
+      .lean()
+      .exec();
+    res.json({
+      success: true,
+      trainer,
+      message: "Тренерийг амжилттай баталгаажууллаа",
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+export const trainerReject = async (req, res) => {
+  try {
+    const { id } = req.params; // id is the User's _id
+    const trainer = await Trainer.findOneAndUpdate(
+      { userId: id },
+      { isconfirmed: false },
+      { new: true }
+    )
+      .lean()
+      .exec();
+    res.json({ success: true, trainer, message: "Тренерийг хаслаа" });
+  } catch (error) {
+    res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+export const getTrainerById = async (req, res) => {
+  try {
+    const { id } = req.params; // id is trainerId (Trainer's _id)
+    // Find the Trainer document
+    const trainer = await Trainer.findById(id).lean();
+    if (!trainer) return res.status(404).json({ message: "Trainer not found" });
+
+    // Find the User document for this trainer
+    const user = await User.findById(trainer.userId).lean();
+
+    // Merge User and Trainer info
+    let profileImage = null;
+    if (trainer.profileImage) {
+      profileImage = `${req.protocol}://${req.get("host")}/uploads/${
+        trainer.profileImage
+      }`;
+    }
+
+    // Populate students with Member info
+    const students = await Promise.all(
+      (trainer.students || []).map(async (studentId) => {
+        const member = await Member.findById(studentId).lean();
+        if (!member) return null;
+        const user = await User.findById(member.userId).lean();
+        return {
+          ...user,
+          memberId: member._id,
+          ...member,
+        };
+      })
+    );
+
+    res.json({
+      ...user,
+      trainerId: trainer._id,
+      ...trainer,
+      profileImage,
+      students: students.filter(Boolean), // Remove nulls
+    });
+  } catch (error) {
+    console.error("Error in getTrainerById:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

@@ -24,7 +24,7 @@ export const useTrainerStore = create((set, get) => ({
     set({ isLoading: true });
     try {
       const res = await axiosInstance.put(
-        `/users/trainer_confirm/${trainerId}`
+        `/trainers/trainer_confirm/${trainerId}`
       );
       console.log("Trainer confirmed:", res.data);
       await get().getAllTrainers();
@@ -40,7 +40,9 @@ export const useTrainerStore = create((set, get) => ({
   rejectTrainer: async (trainerId) => {
     set({ isLoading: true });
     try {
-      const res = await axiosInstance.put(`/users/trainer_reject/${trainerId}`);
+      const res = await axiosInstance.put(
+        `/trainers/trainer_reject/${trainerId}`
+      );
       console.log("Trainer rejected:", res.data);
       await get().getAllTrainers();
       return true;
@@ -92,7 +94,7 @@ export const useTrainerStore = create((set, get) => ({
 
   getTrainerById: async (trainerId) => {
     try {
-      const res = await axiosInstance.get(`/users/trainer/${trainerId}`);
+      const res = await axiosInstance.get(`/trainers/trainer/${trainerId}`);
       set((state) => ({
         trainers: state.trainers.map((t) =>
           t.trainerId === trainerId ? { ...t, ...res.data } : t
