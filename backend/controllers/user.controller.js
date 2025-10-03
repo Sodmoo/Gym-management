@@ -144,22 +144,18 @@ export const alltrainer = async (req, res) => {
 };
 
 export const allMember = async (req, res) => {
-  // Renamed to plural for clarity
   try {
-    // Fetch all Members and populate userId to get full User data
     const members = await Member.find()
       .populate(
         "userId",
         "surname username email role gender profileCompleted resetToken resetTokenExpiry createdAt updatedAt"
-      ) // Select only needed User fields
+      )
       .lean();
 
-    // Filter to only include those with user.role === "user" (members)
     const filteredMembers = members.filter(
       (m) => m.userId && m.userId.role === "user"
     );
 
-    // Merge and construct response
     const membersWithExtra = filteredMembers.map((member) => {
       const user = member.userId; // Populated User object
       let profileImage = null;
@@ -169,12 +165,13 @@ export const allMember = async (req, res) => {
         }`;
       }
 
-      // Merge: User fields + Member fields (exclude userId since it's ref)
       const { userId, ...memberRest } = member;
+
       return {
-        ...user, // All User fields
-        memberId: member._id, // Member's own _id
-        ...memberRest, // Other Member fields (age, phone, etc.)
+        ...user, // User-ийн бүх талбар
+        userId: user._id, // <--- энд User ID-г нэмж байна
+        memberId: member._id, // Member-ийн _id
+        ...memberRest, // Member-ийн бусад талбарууд
         profileImage,
       };
     });

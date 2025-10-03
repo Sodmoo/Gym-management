@@ -3,6 +3,37 @@ import Trainer from "../models/trainer.model.js";
 import Member from "../models/member.model.js";
 import mongoose from "mongoose";
 
+export const trainers = async (req, res) => {
+  try {
+    // Зөвхөн батлагдсан trainer-уудыг авна
+    const trainers = await Trainer.find({ isconfirmed: true })
+      .populate("userId") // user info-г авна
+      .lean();
+
+    // Энд profileImage тохируулах
+    const trainersWithExtra = trainers.map((trainer) => {
+      let profileImage = null;
+      if (trainer.userId?.profileImage) {
+        profileImage = `${req.protocol}://${req.get("host")}/uploads/${
+          trainer.userId.profileImage
+        }`;
+      }
+
+      return {
+        trainerId: trainer._id,
+        ...trainer,
+        user: trainer.userId, // User info нэмлээ
+        profileImage,
+      };
+    });
+
+    res.json(trainersWithExtra);
+  } catch (error) {
+    console.error("Error in alltrainer:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const assignStudentToTrainer = async (req, res) => {
   try {
     const { trainerId, memberId } = req.body; // These are userId values (from Users collection)

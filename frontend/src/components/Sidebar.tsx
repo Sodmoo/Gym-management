@@ -81,8 +81,8 @@ const Sidebar = () => {
         icon: <LayoutDashboard size={18} />,
       },
       {
-        path: "/user/classes",
-        label: "My Classes",
+        path: "/user/trainer",
+        label: "Trainer",
         icon: <BookOpen size={18} />,
       },
       {

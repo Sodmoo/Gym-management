@@ -7,6 +7,7 @@ import ResetPassword from "./pages/auth/resetPassword";
 import Setup_profile from "./pages/ProfileSetup/Setup_profile";
 import A_Dashboard from "./pages/dashboard/Admin/A_dashboard";
 import T_Dashboard from "./pages/dashboard/T_dashboard";
+import Trainer from "./pages/dashboard/User/Trainer";
 import U_Dashboard from "./pages/dashboard/User/U_dashboard";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
@@ -101,6 +102,16 @@ const App = () => {
             <ProtectedRoute role="user">
               <DashboardLayout>
                 <U_Dashboard />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/user/trainer"
+          element={
+            <ProtectedRoute role="user">
+              <DashboardLayout>
+                <Trainer />
               </DashboardLayout>
             </ProtectedRoute>
           }

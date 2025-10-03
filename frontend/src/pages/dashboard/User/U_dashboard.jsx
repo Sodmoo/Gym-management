@@ -1,174 +1,289 @@
 import React, { useEffect, useState } from "react";
-import { useMemberStore } from "../../../store/memberStore";
-import { Check, Trash2, Plus } from "lucide-react";
+import { useUserStore } from "../../../store/userStore.js";
+import { Check, Trash2, Plus, X } from "lucide-react";
+import { useMemberStore } from "../../../store/memberStore.js";
 
-const Dashboard = () => {
-  const {
-    members,
-    getAllMembers,
-    isLoading,
-    updateSubGoal,
-    deleteSubGoal,
-    addSubGoal,
-  } = useMemberStore();
+const U_Dashboard = () => {
+  const { isLoading, updateSubGoal, deleteSubGoal, addSubGoal } =
+    useMemberStore();
+  const { user, fetchUser, error } = useUserStore();
 
-  const [newTask, setNewTask] = useState("");
-  const [newTarget, setNewTarget] = useState("");
-  const [newUnit, setNewUnit] = useState("");
+  const [adding, setAdding] = useState(false); // modal биш inline form
+  const [form, setForm] = useState({ title: "", target: "", unit: "" });
 
   useEffect(() => {
-    getAllMembers();
-  }, [getAllMembers]);
+    fetchUser();
+  }, [fetchUser]);
 
   if (isLoading) return <p className="p-4">Түр хүлээнэ үү...</p>;
+  if (error) return <p className="p-4 text-red-500">{error}</p>;
+  if (!user) return <p className="p-4">Түр хүлээнэ үү...</p>;
+
+  const userTasks = user?.subGoals || [];
+
+  const getRandomColor = () => {
+    const colors = [
+      "#EF4444",
+      "#F59E0B",
+      "#10B981",
+      "#3B82F6",
+      "#8B5CF6",
+      "#EC4899",
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+  };
+
+  const handleUpdateProgress = async (subGoal) => {
+    if (!user?._id) return;
+    const value = prompt("Нэмэх тоо оруул (ж: 1, 2 ...)");
+    if (!value || isNaN(value)) return;
+    const newProgress = subGoal.progress + parseInt(value, 10);
+    await updateSubGoal(user._id, subGoal._id, newProgress);
+    await fetchUser();
+  };
+
+  const handleDeleteSubGoal = async (subGoalId) => {
+    if (!user?._id) return;
+    if (!window.confirm("Энэ дэд зорилгыг устгах уу?")) return;
+    await deleteSubGoal(user._id, subGoalId);
+    await fetchUser();
+  };
+
+  const handleAddTask = async () => {
+    if (!user?._id) return;
+    if (!form.title.trim()) return alert("Task title заавал бөглөнө үү");
+    await addSubGoal(user._id, {
+      title: form.title,
+      target: Number(form.target) || 1,
+      unit: form.unit,
+    });
+    setForm({ title: "", target: "", unit: "" });
+    setAdding(false);
+    await fetchUser();
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-[68%_30%] h-full gap-4">
-      {/* Зүүн тал */}
+      {/* Зүүн тал - User info */}
       <div className="bg-white shadow-md p-6 h-full overflow-y-auto rounded-md">
-        <h2 className="text-2xl font-bold mb-4">Зүүн талын блок</h2>
-        <p className="text-gray-600">Статистик, график г.м байж болно.</p>
+        <h2 className="text-2xl font-bold mb-4">Миний мэдээлэл</h2>
+        <div className="flex items-center gap-4 mb-4">
+          {user?.profileImage ? (
+            <img
+              src={user.profileImage}
+              alt="Profile"
+              className="w-20 h-20 rounded-full object-cover border"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-full bg-gray-300 flex items-center justify-center">
+              No Image
+            </div>
+          )}
+          <div>
+            <p>
+              <strong>Нэр:</strong> {user?.username}
+            </p>
+            <p>
+              <strong>Email:</strong> {user?.email}
+            </p>
+          </div>
+        </div>
+
+        <p>
+          <strong>Өндөр:</strong> {user?.height || "—"}
+        </p>
+        <p>
+          <strong>Жин:</strong> {user?.weight || "—"}
+        </p>
+        <p>
+          <strong>Зорилго:</strong> {user?.goal || "—"}
+        </p>
       </div>
 
-      {/* Баруун тал */}
-      <div className="bg-orange-400 h-full w-full p-4 overflow-y-auto rounded-md">
-        <h2 className="pt-3 pb-3 text-white text-xl font-semibold">
-          My To-Do Tasks
-        </h2>
-        <div className="space-y-4 w-full">
-          {members.map((member) => (
-            <div key={member._id} className="space-y-3 w-full">
-              {member.subGoals?.length > 0 ? (
-                member.subGoals.map((sub, index) => {
-                  const percentage = Math.min(
-                    (sub.progress / sub.target) * 100,
-                    100
-                  );
-                  const isDone = percentage >= 100;
+      {/* Баруун тал - Goals */}
+      <div className="bg-orange-400 h-full w-full p-4 overflow-y-auto rounded-md text-white">
+        {/* User Info small cards */}
+        <div className="grid grid-cols-3 gap-3 mb-6 bg-white rounded-lg p-4 text-center">
+          <div>
+            <p className="text-xl font-bold text-gray-900">
+              {user?.weight || "—"} <span className="text-sm">kg</span>
+            </p>
+            <p className="text-sm text-gray-900">Weight</p>
+          </div>
+          <div>
+            <p className="text-xl font-bold text-gray-900">
+              {user?.height || "—"} <span className="text-sm">cm</span>
+            </p>
+            <p className="text-sm text-gray-900">Height</p>
+          </div>
+          <div>
+            <p className="text-xl font-bold text-gray-900">
+              {user?.age || "—"} <span className="text-sm ">yrs</span>
+            </p>
+            <p className="text-sm text-gray-900">Age</p>
+          </div>
+        </div>
 
-                  return (
-                    <div
-                      key={index}
-                      className={`flex items-center justify-between bg-white shadow-md rounded-lg p-3 w-full ${
-                        isDone ? "opacity-70" : ""
-                      }`}
-                    >
-                      {/* Title */}
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 flex items-center justify-center rounded-full bg-purple-100">
-                          {isDone ? (
-                            <Check className="text-green-600" />
-                          ) : (
-                            <span className="text-xl">🔥</span>
-                          )}
-                        </div>
-                        <div>
-                          <h3
-                            className={`font-semibold ${
-                              isDone
-                                ? "text-green-600 line-through"
-                                : "text-gray-700"
-                            }`}
-                          >
-                            {sub.title}
-                          </h3>
-                          <p className="text-sm text-gray-500">
-                            {sub.progress}
-                            {sub.unit}/{sub.target}
-                            {sub.unit}
-                          </p>
-                        </div>
-                      </div>
+        {/* Goals Header */}
+        <div className="flex justify-between items-center mb-4 mr-2">
+          <h2 className="text-lg font-semibold">Your Goals</h2>
+          <button
+            onClick={() => setAdding(true)}
+            className="p-2 bg-white text-black rounded-full hover:bg-gray-200"
+          >
+            <Plus size={18} />
+          </button>
+        </div>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-2">
-                        {!isDone && (
-                          <button
-                            onClick={() => {
-                              const value = prompt(
-                                "Нэмэх тоо оруул (ж: 1, 2 ...)"
-                              );
-                              if (value) {
-                                updateSubGoal(
-                                  member._id,
-                                  sub._id,
-                                  sub.progress + parseInt(value)
-                                );
-                              }
-                            }}
-                            className="p-1 bg-gray-200 rounded hover:bg-gray-300 flex items-center gap-1"
-                          >
-                            <Plus size={14} /> Add
-                          </button>
-                        )}
-
-                        {/* Устгах */}
-                        <button
-                          onClick={() => deleteSubGoal(member._id, sub._id)}
-                          className="p-1.5 bg-red-100 hover:bg-red-200 rounded-full"
-                        >
-                          <Trash2 size={14} className="text-red-600" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-gray-200 text-sm italic">
-                  Дэд зорилго нэмээгүй байна
-                </p>
-              )}
-
-              {/* Create New Task Form */}
-              <div className="bg-white p-3 rounded-md shadow-md mt-4">
-                <h4 className="font-semibold mb-2">Шинэ Task нэмэх</h4>
+        {/* Goals list */}
+        <div className="space-y-3">
+          {adding && (
+            <div className="bg-white text-gray-800 shadow-md rounded-lg p-4">
+              <h3 className="text-md font-semibold mb-3">Шинэ Task</h3>
+              <div className="space-y-2">
                 <input
                   type="text"
-                  placeholder="Жишээ: Өдөрт 2л ус уух"
-                  value={newTask}
-                  onChange={(e) => setNewTask(e.target.value)}
-                  className="w-full border p-2 rounded mb-2"
+                  placeholder="Task Title"
+                  className="w-full border p-2 rounded"
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
                 />
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="number"
-                    placeholder="Target"
-                    value={newTarget}
-                    onChange={(e) => setNewTarget(e.target.value)}
-                    className="flex-1 border p-2 rounded"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Unit (л, цаг, удаа)"
-                    value={newUnit}
-                    onChange={(e) => setNewUnit(e.target.value)}
-                    className="flex-1 border p-2 rounded"
-                  />
-                </div>
+                <input
+                  type="number"
+                  placeholder="Target (тоо)"
+                  className="w-full border p-2 rounded"
+                  value={form.target}
+                  onChange={(e) => setForm({ ...form, target: e.target.value })}
+                />
+                <input
+                  type="text"
+                  placeholder="Unit (ж: удаа, кг, цаг)"
+                  className="w-full border p-2 rounded"
+                  value={form.unit}
+                  onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end gap-2 mt-3">
                 <button
-                  onClick={() => {
-                    if (newTask && newTarget) {
-                      addSubGoal(member._id, {
-                        title: newTask,
-                        target: newTarget,
-                        unit: newUnit,
-                      });
-                      setNewTask("");
-                      setNewTarget("");
-                      setNewUnit("");
-                    }
-                  }}
-                  className="bg-green-500 text-white px-3 py-2 rounded hover:bg-green-600"
+                  onClick={() => setAdding(false)}
+                  className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
                 >
-                  Create Task
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddTask}
+                  className="px-3 py-1 rounded bg-orange-500 text-white hover:bg-orange-600"
+                >
+                  Save
                 </button>
               </div>
             </div>
-          ))}
+          )}
+
+          {userTasks.length > 0 ? (
+            userTasks.map((sub, index) => {
+              const percentage = Math.min(
+                (sub.progress / sub.target) * 100,
+                100
+              );
+              const isDone = percentage >= 100;
+
+              return (
+                <div
+                  key={sub._id || index}
+                  className="flex items-center justify-between bg-white text-gray-800 shadow-md rounded-lg px-4 py-2"
+                >
+                  {/* Goal left */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 flex items-center justify-center rounded-full bg-purple-100">
+                      {isDone ? (
+                        <Check className="text-green-600" />
+                      ) : (
+                        <span className="text-xl">🔥</span>
+                      )}
+                    </div>
+                    <div>
+                      <h3
+                        className={`font-semibold ${
+                          isDone
+                            ? "text-green-600 line-through"
+                            : "text-gray-800"
+                        }`}
+                      >
+                        {sub.title}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {sub.progress}
+                        {sub.unit}/{sub.target}
+                        {sub.unit}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Goal right */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-12 h-12">
+                      <svg className="w-full h-full" viewBox="0 0 64 64">
+                        <circle
+                          className="text-gray-200"
+                          strokeWidth="3"
+                          stroke="currentColor"
+                          fill="transparent"
+                          r="22"
+                          cx="32"
+                          cy="32"
+                        />
+                        <circle
+                          strokeWidth="3"
+                          strokeDasharray={2 * Math.PI * 28}
+                          strokeDashoffset={
+                            2 *
+                            Math.PI *
+                            28 *
+                            (1 - Math.min(percentage / 100, 1))
+                          }
+                          strokeLinecap="round"
+                          fill="transparent"
+                          r="22"
+                          cx="32"
+                          cy="32"
+                          transform="rotate(-90 32 32)"
+                          style={{ stroke: getRandomColor() }}
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold">
+                        {Math.round(percentage)}%
+                      </div>
+                    </div>
+
+                    {/* Buttons */}
+                    {!isDone && (
+                      <button
+                        onClick={() => handleUpdateProgress(sub)}
+                        className="p-2 text-green-600 hover:bg-gray-100 rounded-full"
+                      >
+                        <Plus size={18} />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleDeleteSubGoal(sub._id)}
+                      className="p-2 text-red-600 hover:bg-gray-100 rounded-full"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-gray-200 text-sm italic">
+              Дэд зорилго нэмээгүй байна
+            </p>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-export default Dashboard;
+export default U_Dashboard;
