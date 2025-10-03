@@ -5,6 +5,7 @@ import {
   updateProgress,
   deleteSubGoal,
   memberinfo,
+  joinTrainer,
 } from "../controllers/member.controller.js";
 
 const router = express.Router();
@@ -14,5 +15,6 @@ router.get("/allmember", allMember);
 router.post("/:id/subgoals", addSubGoal);
 router.put("/:memberId/subgoals/:subGoalId/progress", updateProgress);
 router.delete("/:memberId/subgoals/:subGoalId/delete", deleteSubGoal);
+router.post("/joinTrainer", joinTrainer);
 
 export default router;

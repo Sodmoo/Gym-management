@@ -1,4 +1,5 @@
 import Member from "../models/member.model.js";
+import Trainer from "../models/trainer.model.js";
 
 export const memberinfo = async (req, res) => {
   try {
@@ -101,5 +102,30 @@ export const deleteSubGoal = async (req, res) => {
     res.json({ message: "SubGoal deleted", subGoals: member.subGoals });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+export const joinTrainer = async (req, res) => {
+  try {
+    const { memberId, trainerId } = req.body;
+
+    const member = await Member.findById(memberId);
+    if (!member) return res.status(404).json({ message: "Member not found" });
+
+    // Already requested check
+    const alreadyRequested = member.trainers.some(
+      (t) => t._id.toString() === trainerId
+    );
+    if (alreadyRequested)
+      return res.status(400).json({ message: "Already requested" });
+
+    // Add request
+    member.trainers.push({ _id: trainerId, confirmed: false }); // pending
+    await member.save();
+
+    res.status(200).json({ message: "Join request sent", trainerId });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
   }
 };

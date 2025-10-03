@@ -20,6 +20,19 @@ export const useTrainerStore = create((set, get) => ({
     }
   },
 
+  Trainers: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await axiosInstance.get("/trainers/trainers"); // GET trainers API
+      set({ trainers: res.data });
+    } catch (err) {
+      console.error("Error fetching trainers:", err);
+      set({ error: err.message });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   confirmTrainer: async (trainerId) => {
     set({ isLoading: true });
     try {

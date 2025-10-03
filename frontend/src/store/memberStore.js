@@ -128,4 +128,23 @@ export const useMemberStore = create((set, get) => ({
       await get().getAllMembers();
     }
   },
+
+  joinTrainer: async (trainerId, memberId) => {
+    try {
+      const res = await axiosInstance.post("/members/joinTrainer", {
+        trainerId,
+        memberId,
+      });
+      set({
+        trainers: get().trainers.map((t) =>
+          t.trainerId === trainerId ? { ...t, joined: true } : t
+        ),
+      });
+
+      return res.data;
+    } catch (error) {
+      console.error("Error joining trainer:", error);
+      throw error;
+    }
+  },
 }));

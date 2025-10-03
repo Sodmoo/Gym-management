@@ -10,26 +10,22 @@ export const trainers = async (req, res) => {
       .populate("userId") // user info-г авна
       .lean();
 
-    // Энд profileImage тохируулах
     const trainersWithExtra = trainers.map((trainer) => {
-      let profileImage = null;
-      if (trainer.userId?.profileImage) {
-        profileImage = `${req.protocol}://${req.get("host")}/uploads/${
-          trainer.userId.profileImage
-        }`;
-      }
+      const profileImage = trainer.profileImage
+        ? `${req.protocol}://${req.get("host")}/uploads/${trainer.profileImage}`
+        : `${req.protocol}://${req.get("host")}/uploads/default-profile.png`;
 
       return {
         trainerId: trainer._id,
         ...trainer,
-        user: trainer.userId, // User info нэмлээ
+        user: trainer.userId, // User info-г user талбарт
         profileImage,
       };
     });
 
     res.json(trainersWithExtra);
   } catch (error) {
-    console.error("Error in alltrainer:", error);
+    console.error("Error in trainers:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

@@ -28,6 +28,14 @@ const SubGoalSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+const trainerRefSchema = new mongoose.Schema({
+  trainerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Trainer",
+  },
+  confirmed: { type: Boolean, default: false },
+});
+
 const memberSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   age: { type: Number, default: null },
@@ -39,12 +47,7 @@ const memberSchema = new mongoose.Schema({
   goal: { type: String, default: "" },
   subGoals: [SubGoalSchema],
   membership: { type: membershipSchema, default: {} },
-  trainers: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Trainer",
-    },
-  ],
+  trainers: [trainerRefSchema], // ✅ subdocument array
 });
 
 export default mongoose.model("Member", memberSchema);
