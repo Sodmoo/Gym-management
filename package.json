@@ -8,6 +8,7 @@
     "client": "cd frontend && npm run dev"
   },
   "dependencies": {
+    "framer-motion": "^12.23.22",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1"
   }

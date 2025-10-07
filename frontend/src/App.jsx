@@ -6,12 +6,12 @@ import ForgotPassword from "./pages/auth/forgotPassword";
 import ResetPassword from "./pages/auth/resetPassword";
 import Setup_profile from "./pages/ProfileSetup/Setup_profile";
 import A_Dashboard from "./pages/dashboard/Admin/A_dashboard";
-import T_Dashboard from "./pages/dashboard/T_dashboard";
-import Trainer from "./pages/dashboard/User/Trainer";
+import T_Dashboard from "./pages/dashboard/Trainer/T_dashboard";
 import U_Dashboard from "./pages/dashboard/User/U_dashboard";
+import Trainer from "./pages/dashboard/User/Trainer";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
-import { Loader } from "lucide-react";
+import { Loader, User } from "lucide-react";
 import { useUserStore } from "./store/userStore";
 
 import DashboardLayout from "./layout/DashboardLayout";
@@ -21,12 +21,12 @@ import Settings from "./pages/dashboard/Admin/Settings";
 import Trainers from "./pages/dashboard/Admin/Trainers";
 import Equipments from "./pages/dashboard/Admin/Equipments";
 import Plans from "./pages/dashboard/Admin/Plans";
+import TemplateManager from "./pages/dashboard/Trainer/Template";
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
   const fetchUser = useUserStore((s) => s.fetchUser);
   const { profileComplete } = useAuthStore.getState();
-
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
@@ -84,12 +84,23 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        {/* Trainer routes */}
         <Route
           path="/trainer/*"
           element={
             <ProtectedRoute role="trainer">
               <DashboardLayout>
                 <T_Dashboard />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trainer/Template"
+          element={
+            <ProtectedRoute role="trainer">
+              <DashboardLayout>
+                <TemplateManager />
               </DashboardLayout>
             </ProtectedRoute>
           }

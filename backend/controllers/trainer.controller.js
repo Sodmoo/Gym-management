@@ -1,6 +1,8 @@
 // controllers/trainer.controller.js
 import Trainer from "../models/trainer.model.js";
 import Member from "../models/member.model.js";
+import workoutTemplateSchema from "../models/Workout.model.js";
+import dietTemplateSchema from "../models/Diet.model.js";
 import mongoose from "mongoose";
 
 export const trainers = async (req, res) => {
@@ -184,5 +186,175 @@ export const getTrainerById = async (req, res) => {
   } catch (error) {
     console.error("Error in getTrainerById:", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const assignedStudents = async (req, res) => {
+  try {
+    const trainerId = req.params.id;
+    const trainer = await Trainer.findById(trainerId)
+      .populate("students")
+      .lean();
+
+    res.json(trainer.students || []);
+  } catch (error) {
+    console.error("Error in assignedStudents:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const templateWorkout = async (req, res) => {
+  try {
+    const { trainerId, title, goal, description, durationWeeks, exercises } =
+      req.body;
+
+    // Шалгалт
+    if (!trainerId || !title || !exercises || exercises.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Бүх шаардлагатай талбарыг бөглөнө үү." });
+    }
+
+    const newTemplate = new workoutTemplateSchema({
+      trainerId,
+      title,
+      goal,
+      description,
+      durationWeeks,
+      exercises,
+    });
+
+    await newTemplate.save();
+    res
+      .status(201)
+      .json({ message: "Template амжилттай үүслээ", data: newTemplate });
+  } catch (error) {
+    res.status(500).json({ message: "Template үүсгэхэд алдаа гарлаа", error });
+  }
+};
+
+export const workoutTemplates = async (req, res) => {
+  const trainerId = req.params.id;
+  try {
+    const templates = await workoutTemplateSchema.find({ trainerId });
+    res.status(200).json(templates);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching templates", error });
+  }
+};
+
+export const updateWorkoutTemplate = async (req, res) => {
+  const templateId = req.params.id;
+  const updates = req.body;
+
+  try {
+    const updatedTemplate = await workoutTemplateSchema.findByIdAndUpdate(
+      templateId,
+      updates,
+      { new: true }
+    );
+
+    if (!updatedTemplate) {
+      return res.status(404).json({ message: "Template not found" });
+    }
+
+    res.status(200).json({
+      message: "Template амжилттай шинэчлэгдлээ",
+      data: updatedTemplate,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Template шинэчлэхэд алдаа гарлаа", error });
+  }
+};
+
+export const deleteWorkoutTemplate = async (req, res) => {
+  const templateId = req.params.id;
+  try {
+    const deleted = await workoutTemplateSchema.findByIdAndDelete(templateId);
+    if (!deleted) {
+      return res.status(404).json({ message: "Template not found" });
+    }
+    res.status(200).json({ message: "Template deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting template", error });
+  }
+};
+
+// Diet template functions
+export const templateDiet = async (req, res) => {
+  try {
+    const {
+      trainerId,
+      title,
+      goal,
+      durationWeeks,
+      calories,
+      dailyMeals,
+      notes,
+    } = req.body;
+
+    const newTemplate = new dietTemplateSchema({
+      trainerId,
+      title,
+      goal,
+      durationWeeks,
+      calories,
+      dailyMeals,
+      notes,
+    });
+    await newTemplate.save();
+    res
+      .status(201)
+      .json({ message: "Diet Template амжилттай үүслээ", data: newTemplate });
+  } catch (error) {
+    res.status(500).json({ message: "Template үүсгэхэд алдаа гарлаа", error });
+  }
+};
+
+export const dietTemplates = async (req, res) => {
+  const trainerId = req.params.id;
+  try {
+    const templates = await dietTemplateSchema.find({ trainerId });
+    res.status(200).json(templates);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching templates", error });
+  }
+};
+
+export const updateDietTemplate = async (req, res) => {
+  const templateId = req.params.id;
+  const updates = req.body;
+  try {
+    const updatedTemplate = await dietTemplateSchema.findByIdAndUpdate(
+      templateId,
+      updates,
+      { new: true }
+    );
+    if (!updatedTemplate) {
+      return res.status(404).json({ message: "Template not found" });
+    }
+    res.status(200).json({
+      message: "Diet Template амжилттай шинэчлэгдлээ",
+      data: updatedTemplate,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Template шинэчлэхэд алдаа гарлаа", error });
+  }
+};
+
+export const deleteDietemplate = async (req, res) => {
+  const templateId = req.params.id;
+  try {
+    const deleted = await dietTemplateSchema.findByIdAndDelete(templateId);
+    if (!deleted) {
+      return res.status(404).json({ message: "Template not found" });
+    }
+    res.status(200).json({ message: "Diet Template deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting template", error });
   }
 };

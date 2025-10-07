@@ -1,32 +1,43 @@
-// WorkoutPlan.js
 import mongoose from "mongoose";
 
-const WorkoutPlan = new mongoose.Schema(
+const workoutTemplateSchema = new mongoose.Schema(
   {
     trainerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Trainer",
       required: true,
     },
-    memberId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Member",
+    title: {
+      type: String,
       required: true,
     },
-    title: String,
-    goal: String,
-    duration: String, // e.g. "4 weeks"
+    goal: {
+      type: String, // жишээ: "Weight Loss", "Strength Building"
+    },
+    description: {
+      type: String,
+    },
+    durationWeeks: {
+      type: Number,
+      default: 4, // template нийт хэдэн долоо хоногийн хөтөлбөр вэ
+    },
     exercises: [
       {
-        name: String,
-        sets: Number,
-        reps: Number,
-        restTime: String,
+        name: { type: String, required: true },
+        category: {
+          type: String, // жишээ нь "Chest", "Legs", "Back"
+        },
+        sets: { type: Number, required: true },
+        reps: { type: Number, required: true },
+        rest: { type: Number, default: 60 }, // секундээр
       },
     ],
-    createdAt: { type: Date, default: Date.now },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: true }
 );
 
-export default mongoose.model("WorkoutPlan", WorkoutPlan);
+export default mongoose.model("WorkoutTemplate", workoutTemplateSchema);
