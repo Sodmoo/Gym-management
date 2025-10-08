@@ -346,6 +346,9 @@ const TemplateModal = ({
                     <th className="text-left py-2 px-3 font-semibold">
                       Exercise
                     </th>
+                    <th className="py-2 px-3 font-semibold text-center w-20">
+                      Category
+                    </th>
                     <th className="py-2 px-3 font-semibold">Sets</th>
                     <th className="py-2 px-3 font-semibold">Reps</th>
                     <th className="py-2 px-3 font-semibold">Rest</th>
@@ -357,7 +360,7 @@ const TemplateModal = ({
                     <tr key={i} className="border-t">
                       <td className="py-2 px-3">
                         <input
-                          className={`border rounded w-full px-2 py-1 ${
+                          className={` w-full px-2 py-1 ${
                             errors[`ex_${i}_name`] ? "border-red-400" : ""
                           }`}
                           value={ex.name}
@@ -371,9 +374,25 @@ const TemplateModal = ({
                           </div>
                         )}
                       </td>
+                      <td className="py-2 px-3">
+                        <input
+                          className={`w-20 px-2 py-1 text-center ${
+                            errors[`ex_${i}_name`] ? "border-red-400" : ""
+                          }`}
+                          value={ex.category}
+                          onChange={(e) =>
+                            handleExerciseChange(i, "category", e.target.value)
+                          }
+                        />
+                        {errors[`ex_${i}_category`] && (
+                          <div className="text-xs text-red-500">
+                            {errors[`ex_${i}_category`]}
+                          </div>
+                        )}
+                      </td>
                       <td className="text-center">
                         <input
-                          className={`border rounded w-12 text-center ${
+                          className={` w-12 text-center ${
                             errors[`ex_${i}_sets`] ? "border-red-400" : ""
                           }`}
                           value={ex.sets}
@@ -389,7 +408,7 @@ const TemplateModal = ({
                       </td>
                       <td className="text-center">
                         <input
-                          className={`border rounded w-12 text-center ${
+                          className={` w-12 text-center ${
                             errors[`ex_${i}_reps`] ? "border-red-400" : ""
                           }`}
                           value={ex.reps}
@@ -405,7 +424,7 @@ const TemplateModal = ({
                       </td>
                       <td className="text-center">
                         <input
-                          className="border rounded w-12 text-center"
+                          className=" w-12 text-center"
                           value={ex.rest}
                           onChange={(e) =>
                             handleExerciseChange(i, "rest", e.target.value)
@@ -415,7 +434,7 @@ const TemplateModal = ({
                       <td className="text-center">
                         <button
                           onClick={() => handleDeleteExercise(i)}
-                          className="text-gray-400 hover:text-red-500"
+                          className="text-red-600 hover:text-red-800"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -479,7 +498,7 @@ const TemplateModal = ({
                     >
                       <td className="py-2 px-3">
                         <input
-                          className={`border rounded px-2 py-1 w-full ${
+                          className={` px-2 py-1 w-full ${
                             errors[`meal_${i}_name`] ? "border-red-400" : ""
                           }`}
                           value={meal.name}
@@ -496,7 +515,7 @@ const TemplateModal = ({
                       </td>
                       <td className="py-2 px-3">
                         <input
-                          className={`border rounded px-2 py-1 w-20 ${
+                          className={` px-2 py-1 w-20 ${
                             errors[`meal_${i}_calories`] ? "border-red-400" : ""
                           }`}
                           value={meal.calories}
@@ -513,7 +532,7 @@ const TemplateModal = ({
                       </td>
                       <td className="py-2 px-3">
                         <input
-                          className="border rounded px-2 py-1 w-20"
+                          className=" px-2 py-1 w-20"
                           value={meal.protein}
                           onChange={(e) =>
                             handleMealChange(i, "protein", e.target.value)
@@ -523,7 +542,7 @@ const TemplateModal = ({
                       </td>
                       <td className="py-2 px-3">
                         <input
-                          className="border rounded px-2 py-1 w-20"
+                          className=" px-2 py-1 w-20"
                           value={meal.carbs}
                           onChange={(e) =>
                             handleMealChange(i, "carbs", e.target.value)
@@ -533,7 +552,7 @@ const TemplateModal = ({
                       </td>
                       <td className="py-2 px-3">
                         <input
-                          className="border rounded px-2 py-1 w-20"
+                          className=" px-2 py-1 w-20"
                           value={meal.fat}
                           onChange={(e) =>
                             handleMealChange(i, "fat", e.target.value)

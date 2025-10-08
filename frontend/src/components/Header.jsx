@@ -101,7 +101,7 @@ const Header = (props) => {
 
   return (
     <header
-      className={`flex items-center justify-between pl-1 pr-3 m-6 mr-7 mb-0 rounded-xl shadow ${theme.bg} ${theme.text}`}
+      className={`flex items-center justify-between pl-1 pr-3 m-6 mb-0 rounded-xl shadow ${theme.bg} ${theme.text}`}
     >
       <div className="flex items-center gap-2">
         <button
