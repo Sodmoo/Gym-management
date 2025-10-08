@@ -205,31 +205,74 @@ export const assignedStudents = async (req, res) => {
 
 export const templateWorkout = async (req, res) => {
   try {
-    const { trainerId, title, goal, description, durationWeeks, exercises } =
+    const { trainerId, title, goal, description, durationWeeks, program } =
       req.body;
 
-    // Шалгалт
-    if (!trainerId || !title || !exercises || exercises.length === 0) {
-      return res
-        .status(400)
-        .json({ message: "Бүх шаардлагатай талбарыг бөглөнө үү." });
+    // ✅ 1. Validation
+    if (
+      !trainerId ||
+      !title ||
+      !program ||
+      !Array.isArray(program) ||
+      program.length === 0
+    ) {
+      return res.status(400).json({
+        message:
+          "Бүх шаардлагатай талбарыг бөглөнө үү (trainerId, title, program).",
+      });
     }
 
+    // ✅ 2. Program exercise structure шалгах
+    for (const day of program) {
+      if (
+        !day.dayName ||
+        !Array.isArray(day.exercises) ||
+        day.exercises.length === 0
+      ) {
+        return res.status(400).json({
+          message: `${
+            day.dayName || "Unknown day"
+          } -д дасгалуудыг зөв бөглөнө үү.`,
+        });
+      }
+
+      for (const ex of day.exercises) {
+        if (!ex.name || !ex.sets || !ex.reps) {
+          return res.status(400).json({
+            message: `Дасгал бүрийн нэр, sets, reps талбар шаардлагатай.`,
+          });
+        }
+      }
+    }
+
+    // ✅ 3. Шинэ workout template үүсгэх
     const newTemplate = new workoutTemplateSchema({
       trainerId,
       title,
       goal,
       description,
       durationWeeks,
-      exercises,
+      program,
     });
 
     await newTemplate.save();
-    res
-      .status(201)
-      .json({ message: "Template амжилттай үүслээ", data: newTemplate });
+
+    // ✅ 4. Trainer-д холбоос хадгалах (optional)
+    await Trainer.findByIdAndUpdate(trainerId, {
+      $addToSet: { workoutPlans: newTemplate._id },
+    });
+
+    // ✅ 5. Response буцаах
+    res.status(201).json({
+      message: "Workout Template амжилттай үүслээ.",
+      data: newTemplate,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Template үүсгэхэд алдаа гарлаа", error });
+    console.error("Workout template error:", error);
+    res.status(500).json({
+      message: "Workout Template үүсгэхэд алдаа гарлаа.",
+      error: error.message,
+    });
   }
 };
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import TemplateModal from "../../../components/Template/TemplateModal";
 import { useUserStore } from "../../../store/userStore";
 import { useTemplateStore } from "../../../store/templateStore";
@@ -6,21 +6,25 @@ import {
   Plus,
   Trash2,
   Edit,
-  ChevronDown,
-  ChevronUp,
   Clock,
   List,
   FileText,
+  Utensils,
+  Dumbbell,
+  Target,
 } from "lucide-react";
+import { motion } from "framer-motion";
 
-// ---------- Reusable button ----------
+/* ----------------------------------------------
+   🔹 1. Reusable Icon Button
+------------------------------------------------*/
 const IconButton = ({ onClick, icon, color = "gray", label }) => {
   const base =
-    "p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-blue-300";
+    "p-2 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-cyan-300 shadow-sm";
   const extra =
     color === "red"
-      ? "text-red-600 hover:bg-red-50"
-      : "text-gray-600 hover:bg-gray-100";
+      ? "text-red-500 hover:bg-red-50 hover:shadow-md"
+      : "text-cyan-700 hover:bg-cyan-50 hover:shadow-md";
   return (
     <button aria-label={label} onClick={onClick} className={`${base} ${extra}`}>
       {icon}
@@ -28,125 +32,159 @@ const IconButton = ({ onClick, icon, color = "gray", label }) => {
   );
 };
 
-// ---------- Workout Card ----------
-const WorkoutCard = React.memo(
-  ({ t, expanded, onEdit, onDelete, onToggle }) => (
-    <div className="bg-white rounded-2xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300 hover:-translate-y-1 relative">
-      <div className="p-5 flex justify-between items-start gap-3">
-        <div>
-          <h2 className="font-semibold text-lg text-gray-800">{t.title}</h2>
-          <p className="text-sm text-gray-500 mt-1">{t.goal}</p>
-          {t.description && (
-            <p className="text-sm text-gray-400 mt-1">{t.description}</p>
-          )}
-          <p className="text-sm text-gray-500 mt-2">
-            <Clock className="inline w-4 h-4 mr-1 text-blue-500" />
-            {t.durationWeeks} weeks
-          </p>
+/* ----------------------------------------------
+   🔹 2. Refined Compact Template Card
+------------------------------------------------*/
+const TemplateCard = ({ t, type, onEdit, onDelete }) => {
+  const Icon = type === "workout" ? Dumbbell : Utensils;
+  const isWorkout = type === "workout";
+
+  // Calculate totals
+  const totalExercises = isWorkout
+    ? t.program?.reduce((acc, day) => acc + (day.exercises?.length || 0), 0)
+    : 0;
+  const totalMeals = !isWorkout ? t.dailyMeals?.length || 0 : 0;
+
+  return (
+    <motion.div
+      layout
+      whileHover={{ y: -2, scale: 1.01 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className="group bg-white rounded-2xl border border-cyan-100 shadow-md hover:shadow-xl transition-all overflow-hidden relative"
+    >
+      {/* Refined Header */}
+      <div className="p-5 flex justify-between items-start gap-4 relative">
+        <div className="flex gap-3 items-start flex-1">
+          <motion.div
+            className="p-2 rounded-xl bg-gradient-to-br from-cyan-100 to-cyan-200"
+            whileHover={{ scale: 1.05 }}
+          >
+            <Icon size={20} className="text-cyan-700" />
+          </motion.div>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-bold text-lg text-gray-800 group-hover:text-cyan-600 transition-colors truncate">
+              {t.title}
+            </h2>
+            {t.goal && (
+              <div className="flex items-center gap-2 mt-1">
+                <Target size={14} className="text-cyan-500 flex-shrink-0" />
+                <p className="text-sm text-gray-600 truncate">{t.goal}</p>
+              </div>
+            )}
+            {isWorkout && t.description && (
+              <p className="text-xs text-gray-500 mt-2 line-clamp-2 leading-relaxed">
+                {t.description}
+              </p>
+            )}
+            <div className="flex items-center gap-3 mt-2">
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <Clock size={12} />
+                {isWorkout
+                  ? `${t.durationWeeks ?? "—"}w`
+                  : `${t.durationDays ?? "—"}d`}
+              </div>
+              <div className="text-xs text-gray-500">
+                {isWorkout ? `${totalExercises} ex` : `${totalMeals} meals`}
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <IconButton onClick={() => onEdit(t)} icon={<Edit size={16} />} />
+
+        <motion.div
+          className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-300 absolute top-2 right-2"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <IconButton onClick={() => onEdit(t)} icon={<Edit size={14} />} />
           <IconButton
             onClick={() => onDelete(t._id)}
-            icon={<Trash2 size={16} />}
+            icon={<Trash2 size={14} />}
             color="red"
           />
-          <IconButton
-            onClick={() => onToggle(t._id)}
-            icon={
-              expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />
-            }
-          />
-        </div>
+        </motion.div>
       </div>
 
-      {expanded && (
-        <div className="border-t border-gray-100 bg-gray-50 p-4 rounded-b-2xl transition-all duration-300 space-y-2">
-          {t.exercises?.length ? (
-            t.exercises.map((ex, i) => (
-              <div
-                key={i}
-                className="flex justify-between items-center bg-white rounded-xl p-3 shadow-sm hover:shadow transition"
-              >
-                <div>
-                  <div className="font-medium text-gray-700">{ex.name}</div>
-                  <div className="text-xs text-gray-400">{ex.category}</div>
+      {/* Enhanced Full Data Preview with Increased Height */}
+      <div className="p-4 max-h-88 overflow-y-auto custom-scrollbar bg-gradient-to-b from-transparent to-cyan-50/30">
+        {isWorkout ? (
+          t.program?.length ? (
+            t.program.map((day, dayIdx) => (
+              <div key={dayIdx} className="mb-3">
+                <div className="flex items-center gap-2 mb-2 pt-1">
+                  <div className="w-2 h-2 bg-cyan-500 rounded-full" />
+                  <h4 className="font-semibold text-sm text-cyan-700 truncate">
+                    {day.dayName}
+                  </h4>
                 </div>
-                <div className="text-sm text-gray-600 flex flex-col items-end">
-                  <span className="flex gap-1 items-center">
-                    <List size={12} /> {ex.sets}x{ex.reps}
-                  </span>
-                  <span className="flex gap-1 items-center">
-                    <Clock size={12} /> {ex.rest}s
-                  </span>
-                </div>
+                {day.exercises?.map((ex, exIdx) => (
+                  <motion.div
+                    key={exIdx}
+                    className="flex justify-between items-center p-2.5 bg-white/70 rounded-lg border border-cyan-100/40 text-xs hover:bg-cyan-50/50 transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: dayIdx * 0.1 + exIdx * 0.05 }}
+                  >
+                    <div className="min-w-0">
+                      <span className="truncate font-medium text-gray-800 block">
+                        {ex.name}
+                      </span>
+                      {ex.category && (
+                        <span className="text-gray-500 block text-[10px]">
+                          {ex.category}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-cyan-600 font-semibold flex items-center gap-1">
+                      <List size={10} /> {ex.sets}x{ex.reps}
+                    </span>
+                  </motion.div>
+                ))}
               </div>
             ))
           ) : (
-            <p className="text-sm text-gray-400 italic text-center">
-              No exercises listed.
-            </p>
-          )}
-        </div>
-      )}
-    </div>
-  )
-);
-
-// ---------- Diet Card ----------
-const DietCard = React.memo(({ t, expanded, onEdit, onDelete, onToggle }) => (
-  <div className="bg-white rounded-2xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300 hover:-translate-y-1 relative">
-    <div className="p-5 flex justify-between items-start gap-3">
-      <div>
-        <h2 className="font-semibold text-lg text-gray-800">{t.title}</h2>
-        <p className="text-sm text-gray-500 mt-1">{t.goal}</p>
-        <p className="text-sm text-gray-500 mt-2">
-          Duration: {t.durationDays} days
-        </p>
-      </div>
-      <div className="flex gap-2">
-        <IconButton onClick={() => onEdit(t)} icon={<Edit size={16} />} />
-        <IconButton
-          onClick={() => onDelete(t._id)}
-          icon={<Trash2 size={16} />}
-          color="red"
-        />
-        <IconButton
-          onClick={() => onToggle(t._id)}
-          icon={expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        />
-      </div>
-    </div>
-
-    {expanded && (
-      <div className="border-t border-gray-100 bg-gray-50 p-4 rounded-b-2xl space-y-2">
-        {t.dailyMeals?.length ? (
+            <div className="text-center py-4 text-xs text-gray-400 italic">
+              No program yet
+            </div>
+          )
+        ) : t.dailyMeals?.length ? (
           t.dailyMeals.map((m, i) => (
-            <div
+            <motion.div
               key={i}
-              className="flex justify-between items-center bg-white rounded-xl p-3 shadow-sm hover:shadow transition"
+              className="flex justify-between items-center p-2.5 bg-white/70 rounded-lg border border-teal-100/40 text-xs mb-1 hover:bg-teal-50/50 transition-colors"
+              whileHover={{ scale: 1.02 }}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
             >
-              <div>
-                <div className="font-medium text-gray-700">{m.name}</div>
+              <div className="min-w-0">
+                <span className="truncate font-medium text-gray-800 block">
+                  {m.name}
+                </span>
                 {m.description && (
-                  <div className="text-xs text-gray-500">{m.description}</div>
+                  <span className="text-gray-500 block text-[10px] truncate">
+                    {m.description}
+                  </span>
                 )}
               </div>
-              <div className="text-sm text-gray-600">
-                {m.calories ?? "—"} kcal / {m.protein ?? "—"}g P
-              </div>
-            </div>
+              <span className="text-teal-600 font-semibold">
+                {m.calories ?? "—"}kcal
+              </span>
+            </motion.div>
           ))
         ) : (
-          <p className="text-sm text-gray-400 italic text-center">
-            No meals listed.
-          </p>
+          <div className="text-center py-4 text-xs text-gray-400 italic">
+            No meals yet
+          </div>
         )}
       </div>
-    )}
-  </div>
-));
+    </motion.div>
+  );
+};
 
+/* ----------------------------------------------
+   🔹 3. Polished Template Manager
+------------------------------------------------*/
 const TemplateManager = () => {
   const { user, fetchUser } = useUserStore();
   const {
@@ -167,7 +205,6 @@ const TemplateManager = () => {
   const [activeTab, setActiveTab] = useState("workout");
   const [formData, setFormData] = useState({});
   const [editingId, setEditingId] = useState(null);
-  const [expanded, setExpanded] = useState({});
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
@@ -214,88 +251,89 @@ const TemplateManager = () => {
     }
   };
 
-  const toggleExpand = (id) => setExpanded((s) => ({ ...s, [id]: !s[id] }));
-
   const templates = activeTab === "workout" ? workoutTemplates : dietTemplates;
   const isLoading = activeTab === "workout" ? isLoadingWorkout : isLoadingDiet;
 
   return (
-    <div className="p-6 h-full space-y-6">
-      {/* Tabs */}
-      <div className="flex items-center justify-between bg-white p-3 rounded-full shadow-sm border border-gray-100">
-        <div className="flex bg-gray-100 rounded-full p-1">
+    <div className="p-6 h-full bg-cyan-50 rounded-2xl space-y-6 border border-cyan-100 shadow-sm">
+      {/* Polished Header */}
+      <div className="flex items-center justify-between ">
+        <div className="flex bg-white/80 backdrop-blur rounded-lg border border-cyan-100 overflow-hidden shadow-sm">
           {["workout", "diet"].map((tab) => (
-            <button
+            <motion.button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2 text-sm font-medium rounded-full transition-all ${
+              whileHover={{ scale: 1.05 }}
+              className={`px-5 py-2.5 w-30 text-sm font-medium transition-all ${
                 activeTab === tab
-                  ? "bg-blue-600 text-white shadow"
-                  : "text-gray-600 hover:text-gray-800"
+                  ? "bg-cyan-600 text-white shadow-inner"
+                  : "text-gray-600 hover:text-cyan-600"
               }`}
             >
-              {tab === "workout" ? "Workout Templates" : "Diet Templates"}
-            </button>
+              {tab === "workout" ? "Workouts" : "Diets"}
+            </motion.button>
           ))}
         </div>
-        <button
+        <motion.button
           onClick={() => {
             setFormData({});
             setEditingId(null);
             setShowModal(true);
           }}
-          className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-500 text-white rounded-full hover:opacity-90 transition-all"
+          whileHover={{ scale: 1.05 }}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all shadow-md"
         >
-          <Plus size={16} /> Add Template
-        </button>
+          <Plus size={16} /> New
+        </motion.button>
       </div>
 
-      {/* Templates grid */}
+      {/* Content */}
       {isLoading ? (
-        <div className="text-center text-gray-500 py-10 animate-pulse">
-          <FileText className="mx-auto mb-2" />
-          Loading templates...
+        <div className="text-center text-gray-500 py-12 animate-pulse">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          >
+            <FileText className="mx-auto mb-3 opacity-60" size={32} />
+          </motion.div>
+          <p className="text-sm">Loading...</p>
         </div>
       ) : templates?.length ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {templates.map((t) =>
-            activeTab === "workout" ? (
-              <WorkoutCard
-                key={t._id}
+        <motion.div
+          layout
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
+          {templates.map((t, idx) => (
+            <motion.div
+              key={t._id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+            >
+              <TemplateCard
                 t={t}
-                expanded={!!expanded[t._id]}
+                type={activeTab}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
-                onToggle={toggleExpand}
               />
-            ) : (
-              <DietCard
-                key={t._id}
-                t={t}
-                expanded={!!expanded[t._id]}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onToggle={toggleExpand}
-              />
-            )
-          )}
-        </div>
+            </motion.div>
+          ))}
+        </motion.div>
       ) : (
         <div className="text-center py-12 text-gray-400">
           <FileText className="mx-auto mb-3 opacity-60" size={32} />
-          No templates found.
+          <p className="text-sm font-medium">No templates yet.</p>
+          <p className="text-xs mt-1">Create one to get started!</p>
         </div>
       )}
 
+      {/* Modal */}
       {showModal && (
         <TemplateModal
           type={activeTab}
           editingTemplate={editingId ? formData : null}
           onClose={() => setShowModal(false)}
-          onSave={(updatedData) => {
-            setFormData(updatedData);
-            handleSave(updatedData);
-          }}
+          onSave={(updatedData) => handleSave(updatedData)}
         />
       )}
     </div>

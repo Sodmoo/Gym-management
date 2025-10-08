@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Trash2, X } from "lucide-react";
+import { Trash2, X, Minus, Plus } from "lucide-react";
 
 const TemplateModal = ({
   onClose,
@@ -15,16 +15,15 @@ const TemplateModal = ({
   const [title, setTitle] = useState("");
   const [goal, setGoal] = useState("");
   const [description, setDescription] = useState("");
-  // workout schema: durationWeeks (Number), exercises: [{ name, category, sets, reps, rest }]
+  // workout schema: durationWeeks (Number), program: [{ dayName, exercises: [{ name, category, sets, reps, rest }] }]
   const [durationWeeks, setDurationWeeks] = useState("");
-  const [exercises, setExercises] = useState([]);
+  const [program, setProgram] = useState([]);
   // diet schema: durationDays (Number), totalCalories (Number), dailyMeals: [{ name, description, calories, protein, carbs, fat }]
   const [durationDays, setDurationDays] = useState("");
   const [totalCalories, setTotalCalories] = useState("");
   const [dailyMeals, setDailyMeals] = useState([]);
   // индексээр тухайн мөрийг сонгож description-ийг доорх textarea-нд энэ индексээр засна
   const [selectedMealIndex, setSelectedMealIndex] = useState(null);
-  const [notes, setNotes] = useState(""); // diet.notes or general notes
 
   const [errors, setErrors] = useState({});
 
@@ -36,12 +35,11 @@ const TemplateModal = ({
       setTitle("");
       setGoal("");
       setDescription("");
-      setDurationWeeks("");
-      setExercises([]);
+      setDurationWeeks("4");
+      setProgram([{ dayName: "Day 1", exercises: [] }]);
       setDurationDays("");
       setTotalCalories("");
       setDailyMeals([]);
-      setNotes("");
     } else {
       setTitle(editingTemplate.title || "");
       setGoal(editingTemplate.goal || "");
@@ -49,19 +47,23 @@ const TemplateModal = ({
       setDurationWeeks(
         editingTemplate.durationWeeks != null
           ? String(editingTemplate.durationWeeks)
-          : ""
+          : "4"
       );
-      setExercises(
-        Array.isArray(editingTemplate.exercises)
-          ? editingTemplate.exercises.map((e) => ({
-              name: e.name || "",
-              category: e.category || "",
-              sets: e.sets != null ? String(e.sets) : "",
-              reps: e.reps != null ? String(e.reps) : "",
-              rest: e.rest != null ? String(e.rest) : "60",
-              notes: e.notes || "",
+      setProgram(
+        Array.isArray(editingTemplate.program)
+          ? editingTemplate.program.map((day) => ({
+              dayName: day.dayName || "",
+              exercises: Array.isArray(day.exercises)
+                ? day.exercises.map((e) => ({
+                    name: e.name || "",
+                    category: e.category || "",
+                    sets: e.sets != null ? String(e.sets) : "3",
+                    reps: e.reps != null ? String(e.reps) : "10",
+                    rest: e.rest != null ? String(e.rest) : "60",
+                  }))
+                : [],
             }))
-          : []
+          : [{ dayName: "Day 1", exercises: [] }]
       );
 
       setDurationDays(
@@ -86,7 +88,6 @@ const TemplateModal = ({
             }))
           : []
       );
-      setNotes(editingTemplate.notes || "");
     }
 
     // autofocus first input when modal opens
@@ -112,25 +113,71 @@ const TemplateModal = ({
   }, []);
 
   // -----------------------
-  // Handlers for exercises/meals
+  // Handlers for program (workout)
   // -----------------------
-  const handleAddExercise = () =>
-    setExercises((s) => [
-      ...s,
-      { name: "", category: "", sets: "3", reps: "10", rest: "60", notes: "" },
+  const handleAddDay = useCallback(() => {
+    setProgram((prev) => [
+      ...prev,
+      { dayName: `Day ${prev.length + 1}`, exercises: [] },
     ]);
+  }, []);
 
-  const handleExerciseChange = (i, field, value) => {
-    setExercises((s) => {
-      const copy = [...s];
-      copy[i] = { ...copy[i], [field]: value };
-      return copy;
+  const handleDayNameChange = useCallback((dayIdx, value) => {
+    setProgram((prev) => {
+      const newProgram = [...prev];
+      newProgram[dayIdx] = { ...newProgram[dayIdx], dayName: value };
+      return newProgram;
     });
-  };
+  }, []);
 
-  const handleDeleteExercise = (i) =>
-    setExercises((s) => s.filter((_, idx) => idx !== i));
+  const handleDeleteDay = useCallback((dayIdx) => {
+    setProgram((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((_, d) => d !== dayIdx);
+    });
+  }, []);
 
+  const handleAddExercise = useCallback((dayIdx) => {
+    setProgram((prev) => {
+      const newProgram = [...prev];
+      newProgram[dayIdx] = {
+        ...newProgram[dayIdx],
+        exercises: [
+          ...newProgram[dayIdx].exercises,
+          { name: "", category: "", sets: "3", reps: "10", rest: "60" },
+        ],
+      };
+      return newProgram;
+    });
+  }, []);
+
+  const handleExerciseChange = useCallback((dayIdx, exIdx, field, value) => {
+    setProgram((prev) => {
+      const newProgram = [...prev];
+      newProgram[dayIdx] = {
+        ...newProgram[dayIdx],
+        exercises: newProgram[dayIdx].exercises.map((ex, e) =>
+          e === exIdx ? { ...ex, [field]: value } : ex
+        ),
+      };
+      return newProgram;
+    });
+  }, []);
+
+  const handleDeleteExercise = useCallback((dayIdx, exIdx) => {
+    setProgram((prev) => {
+      const newProgram = [...prev];
+      newProgram[dayIdx] = {
+        ...newProgram[dayIdx],
+        exercises: newProgram[dayIdx].exercises.filter((_, e) => e !== exIdx),
+      };
+      return newProgram;
+    });
+  }, []);
+
+  // -----------------------
+  // Handlers for meals (diet)
+  // -----------------------
   const handleAddMeal = () =>
     setDailyMeals((s) => [
       ...s,
@@ -163,13 +210,18 @@ const TemplateModal = ({
     if (!title || !title.trim()) e.title = "Title is required";
 
     if (type === "workout") {
-      exercises.forEach((ex, idx) => {
-        if (!ex.name || !ex.name.trim())
-          e[`ex_${idx}_name`] = "Exercise name required";
-        if (!ex.sets || isNaN(Number(ex.sets)))
-          e[`ex_${idx}_sets`] = "Sets must be a number";
-        if (!ex.reps || isNaN(Number(ex.reps)))
-          e[`ex_${idx}_reps`] = "Reps must be a number";
+      program.forEach((day, dayIdx) => {
+        if (!day.dayName || !day.dayName.trim())
+          e[`day_${dayIdx}_name`] = "Day name required";
+        day.exercises.forEach((ex, exIdx) => {
+          const prefix = `prog_${dayIdx}_ex_${exIdx}_`;
+          if (!ex.name || !ex.name.trim())
+            e[prefix + "name"] = "Exercise name required";
+          if (!ex.sets || isNaN(Number(ex.sets)))
+            e[prefix + "sets"] = "Sets must be a number";
+          if (!ex.reps || isNaN(Number(ex.reps)))
+            e[prefix + "reps"] = "Reps must be a number";
+        });
       });
     } else {
       dailyMeals.forEach((m, idx) => {
@@ -182,7 +234,7 @@ const TemplateModal = ({
 
     setErrors(e);
     return Object.keys(e).length === 0;
-  }, [title, exercises, dailyMeals, type]);
+  }, [title, program, dailyMeals, type]);
 
   // -----------------------
   // Submit: normalize to backend schema types
@@ -194,19 +246,20 @@ const TemplateModal = ({
       title: title.trim(),
       goal: (goal || "").trim(),
       description: (description || "").trim(),
-      notes: (notes || "").trim(),
     };
 
     if (type === "workout") {
-      if (durationWeeks !== "")
-        payload.durationWeeks = parseInt(durationWeeks, 10);
-      payload.exercises = exercises.map((ex) => ({
-        name: (ex.name || "").trim(),
-        category: (ex.category || "").trim(),
-        sets: ex.sets !== "" ? parseInt(ex.sets, 10) : undefined,
-        reps: ex.reps !== "" ? parseInt(ex.reps, 10) : undefined,
-        rest: ex.rest !== "" ? parseInt(ex.rest, 10) : undefined,
-        notes: ex.notes || "",
+      const dw = durationWeeks !== "" ? parseInt(durationWeeks, 10) : 4;
+      payload.durationWeeks = dw;
+      payload.program = program.map((day) => ({
+        dayName: (day.dayName || "").trim(),
+        exercises: day.exercises.map((ex) => ({
+          name: (ex.name || "").trim(),
+          category: (ex.category || "").trim(),
+          sets: parseInt(ex.sets, 10),
+          reps: parseInt(ex.reps, 10),
+          rest: ex.rest !== "" ? parseInt(ex.rest, 10) : 60,
+        })),
       }));
     } else {
       if (durationDays !== "")
@@ -232,7 +285,7 @@ const TemplateModal = ({
   const canSubmit = !!(title && title.trim().length);
 
   // -----------------------
-  // Render (keep design)
+  // Render (modern cyan design with white background and more padding)
   // -----------------------
   return (
     <div
@@ -240,18 +293,20 @@ const TemplateModal = ({
       aria-modal="true"
       className="fixed inset-0 bg-black/40 flex items-center justify-center p-3 z-50"
     >
-      <div className="bg-white rounded-2xl shadow-lg w-full max-w-2xl p-6 relative space-y-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[95vh] p-8 relative space-y-8 border border-cyan-100/50 overflow-y-auto custom-scrollbar">
         <button
           onClick={onClose}
           aria-label="Close modal"
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-800"
+          className="absolute top-4 right-4 text-gray-400 hover:text-cyan-600 transition-colors"
         >
-          <X size={20} />
+          <X size={24} />
         </button>
 
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-2xl">{type === "workout" ? "🏋️" : "🥗"}</span>
-          <h2 className="text-xl font-semibold">
+        <div className="flex items-center gap-3 mb-">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-cyan-100 to-cyan-200">
+            <span className="text-2xl">{type === "workout" ? "🏋️" : "🥗"}</span>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800">
             {editingTemplate
               ? `Edit ${type === "workout" ? "Workout" : "Diet"} Template`
               : `Create ${type === "workout" ? "Workout" : "Diet"} Template`}
@@ -259,28 +314,28 @@ const TemplateModal = ({
         </div>
 
         <div>
-          <label className="text-sm font-semibold">Title</label>
+          <label className="text-sm font-semibold text-gray-700">Title</label>
           <input
             ref={firstInputRef}
             type="text"
             aria-required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className={`w-full border rounded-lg px-3 py-2 mt-1 focus:ring-2 focus:ring-blue-500 outline-none ${
-              errors.title ? "border-red-400" : ""
+            className={`w-full border border-gray-300 rounded-xl p-2.5 mt-1 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all shadow-sm ${
+              errors.title ? "border-red-400 focus:ring-red-500" : ""
             }`}
             placeholder={
               type === "workout" ? "Upper Body Split" : "7-Day Meal Plan"
             }
           />
           {errors.title && (
-            <div className="text-xs text-red-500 mt-1">{errors.title}</div>
+            <div className="text-xs text-red-500 mt-2">{errors.title}</div>
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-3 mb-3">
+        <div className="grid grid-cols-3 gap-4 mb-3">
           <div>
-            <label className="text-sm font-semibold">Goal</label>
+            <label className="text-sm font-semibold text-gray-700">Goal</label>
             <input
               type="text"
               placeholder={
@@ -290,37 +345,43 @@ const TemplateModal = ({
               }
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full border border-gray-300 rounded-xl p-2.5 mt-1 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all shadow-sm"
             />
           </div>
           {type === "workout" ? (
             <div>
-              <label className="text-sm font-semibold">Duration (weeks)</label>
+              <label className="text-sm font-semibold text-gray-700">
+                Duration (weeks)
+              </label>
               <input
                 type="number"
                 value={durationWeeks}
                 onChange={(e) => setDurationWeeks(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full border border-gray-300 rounded-xl p-2.5 mt-1 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all shadow-sm"
               />
             </div>
           ) : (
             <>
               <div>
-                <label className="text-sm font-semibold">Duration (days)</label>
+                <label className="text-sm font-semibold text-gray-700">
+                  Duration (days)
+                </label>
                 <input
                   type="number"
                   value={durationDays}
                   onChange={(e) => setDurationDays(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full border border-gray-300 rounded-xl p-2.5 mt-1 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all shadow-sm"
                 />
               </div>
               <div>
-                <label className="text-sm font-semibold">Total Calories</label>
+                <label className="text-sm font-semibold text-gray-700">
+                  Total Calories
+                </label>
                 <input
                   type="number"
                   value={totalCalories}
                   onChange={(e) => setTotalCalories(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full border border-gray-300 rounded-xl p-2.5 mt-1 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all shadow-sm"
                 />
               </div>
             </>
@@ -328,178 +389,258 @@ const TemplateModal = ({
         </div>
 
         {type === "workout" ? (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">Exercises</h3>
+              <h3 className="font-semibold text-lg text-gray-800">Program</h3>
               <button
-                onClick={handleAddExercise}
-                className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                onClick={handleAddDay}
+                className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white text-sm rounded-xl hover:bg-cyan-800 transition-all shadow-md"
               >
-                + Add Exercise
+                <Plus /> Add Day
               </button>
             </div>
 
-            <div className="overflow-y-auto max-h-32 rounded-lg border border-gray-200">
-              <table className="min-w-full text-sm text-gray-700">
-                <thead className="bg-gray-100 text-gray-900 sticky top-0">
-                  <tr>
-                    <th className="text-left py-2 px-3 font-semibold">
-                      Exercise
-                    </th>
-                    <th className="py-2 px-3 font-semibold text-center w-20">
-                      Category
-                    </th>
-                    <th className="py-2 px-3 font-semibold">Sets</th>
-                    <th className="py-2 px-3 font-semibold">Reps</th>
-                    <th className="py-2 px-3 font-semibold">Rest</th>
-                    <th className="py-2 px-3"></th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white">
-                  {exercises.map((ex, i) => (
-                    <tr key={i} className="border-t">
-                      <td className="py-2 px-3">
-                        <input
-                          className={` w-full px-2 py-1 ${
-                            errors[`ex_${i}_name`] ? "border-red-400" : ""
-                          }`}
-                          value={ex.name}
-                          onChange={(e) =>
-                            handleExerciseChange(i, "name", e.target.value)
-                          }
-                        />
-                        {errors[`ex_${i}_name`] && (
-                          <div className="text-xs text-red-500">
-                            {errors[`ex_${i}_name`]}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-2 px-3">
-                        <input
-                          className={`w-20 px-2 py-1 text-center ${
-                            errors[`ex_${i}_name`] ? "border-red-400" : ""
-                          }`}
-                          value={ex.category}
-                          onChange={(e) =>
-                            handleExerciseChange(i, "category", e.target.value)
-                          }
-                        />
-                        {errors[`ex_${i}_category`] && (
-                          <div className="text-xs text-red-500">
-                            {errors[`ex_${i}_category`]}
-                          </div>
-                        )}
-                      </td>
-                      <td className="text-center">
-                        <input
-                          className={` w-12 text-center ${
-                            errors[`ex_${i}_sets`] ? "border-red-400" : ""
-                          }`}
-                          value={ex.sets}
-                          onChange={(e) =>
-                            handleExerciseChange(i, "sets", e.target.value)
-                          }
-                        />
-                        {errors[`ex_${i}_sets`] && (
-                          <div className="text-xs text-red-500">
-                            {errors[`ex_${i}_sets`]}
-                          </div>
-                        )}
-                      </td>
-                      <td className="text-center">
-                        <input
-                          className={` w-12 text-center ${
-                            errors[`ex_${i}_reps`] ? "border-red-400" : ""
-                          }`}
-                          value={ex.reps}
-                          onChange={(e) =>
-                            handleExerciseChange(i, "reps", e.target.value)
-                          }
-                        />
-                        {errors[`ex_${i}_reps`] && (
-                          <div className="text-xs text-red-500">
-                            {errors[`ex_${i}_reps`]}
-                          </div>
-                        )}
-                      </td>
-                      <td className="text-center">
-                        <input
-                          className=" w-12 text-center"
-                          value={ex.rest}
-                          onChange={(e) =>
-                            handleExerciseChange(i, "rest", e.target.value)
-                          }
-                        />
-                      </td>
-                      <td className="text-center">
-                        <button
-                          onClick={() => handleDeleteExercise(i)}
-                          className="text-red-600 hover:text-red-800"
+            <div className="space-y-3">
+              {program.map((day, dayIdx) => (
+                <div
+                  key={dayIdx}
+                  className="bg-white border border-cyan-100/50 rounded-xl p-4 shadow-sm"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <input
+                      type="text"
+                      value={day.dayName}
+                      onChange={(e) =>
+                        handleDayNameChange(dayIdx, e.target.value)
+                      }
+                      className={`flex-1 p-2 border bg-gray-200 border-black rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all shadow-sm ${
+                        errors[`day_${dayIdx}_name`]
+                          ? "border-red-400 focus:ring-red-500"
+                          : ""
+                      }`}
+                      placeholder="e.g. Monday"
+                    />
+                    <button
+                      onClick={() => handleAddExercise(dayIdx)}
+                      className="p-2.5 bg-green-400 hover:bg-green-600 text-white text-xs rounded-xl  transition-all shadow-sm"
+                    >
+                      <Plus size={16} />
+                    </button>
+                    {program.length > 1 && (
+                      <button
+                        onClick={() => handleDeleteDay(dayIdx)}
+                        className="p-2.5 bg-red-400 hover:bg-red-600 text-white text-xs rounded-xl  transition-all shadow-sm"
+                      >
+                        <Minus size={16} />
+                      </button>
+                    )}
+                  </div>
+                  {errors[`day_${dayIdx}_name`] && (
+                    <div className="text-xs text-red-500 pl-1 mb-4">
+                      {errors[`day_${dayIdx}_name`]}
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    {/* Header row for exercise columns */}
+                    <div className="flex items-center justify-between gap-3 p-2 bg-cyan-50 rounded-lg border border-cyan-100/40">
+                      <div className="flex-1 text-sm font-medium text-gray-600 px-2">
+                        Name
+                      </div>
+                      <div className="w-25 text-sm font-medium text-gray-600 px-2">
+                        Description
+                      </div>
+                      <div className="w-15 text-center text-sm font-medium text-gray-600">
+                        Sets
+                      </div>
+                      <div className="w-15 text-center text-sm font-medium text-gray-600">
+                        Reps
+                      </div>
+                      <div className="w-15 text-center text-sm font-medium text-gray-600">
+                        Rest
+                      </div>
+                      <div className="w-12" />
+                    </div>
+                    {day.exercises.map((ex, i) => {
+                      const prefix = `prog_${dayIdx}_ex_${i}_`;
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between gap-3 p-1 bg-white rounded-xl border border-cyan-100/50"
                         >
-                          <Trash2 size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          <input
+                            className={`w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all shadow-sm ${
+                              errors[prefix + "name"]
+                                ? "border-red-400 focus:ring-red-500"
+                                : ""
+                            }`}
+                            value={ex.name}
+                            onChange={(e) =>
+                              handleExerciseChange(
+                                dayIdx,
+                                i,
+                                "name",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Exercise name"
+                          />
+                          {errors[prefix + "name"] && (
+                            <div className="text-xs text-red-500">
+                              {errors[prefix + "name"]}
+                            </div>
+                          )}
+
+                          {/* description column (keeps same width as header) */}
+                          <input
+                            className="w-25 p-2 text-left border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all shadow-sm"
+                            value={ex.category}
+                            onChange={(e) =>
+                              handleExerciseChange(
+                                dayIdx,
+                                i,
+                                "category",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Description"
+                          />
+                          <input
+                            className={`w-15 text-center p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all shadow-sm ${
+                              errors[prefix + "sets"]
+                                ? "border-red-400 focus:ring-red-500"
+                                : ""
+                            }`}
+                            value={ex.sets}
+                            onChange={(e) =>
+                              handleExerciseChange(
+                                dayIdx,
+                                i,
+                                "sets",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Sets"
+                          />
+                          {errors[prefix + "sets"] && (
+                            <div className="text-xs text-red-500">
+                              {errors[prefix + "sets"]}
+                            </div>
+                          )}
+                          <input
+                            className={`w-15 text-center p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all shadow-sm ${
+                              errors[prefix + "reps"]
+                                ? "border-red-400 focus:ring-red-500"
+                                : ""
+                            }`}
+                            value={ex.reps}
+                            onChange={(e) =>
+                              handleExerciseChange(
+                                dayIdx,
+                                i,
+                                "reps",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Reps"
+                          />
+                          {errors[prefix + "reps"] && (
+                            <div className="text-xs text-red-500">
+                              {errors[prefix + "reps"]}
+                            </div>
+                          )}
+                          <input
+                            className="w-15 text-center p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all shadow-sm"
+                            value={ex.rest}
+                            onChange={(e) =>
+                              handleExerciseChange(
+                                dayIdx,
+                                i,
+                                "rest",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Rest (s)"
+                          />
+                          <button
+                            onClick={() => handleDeleteExercise(dayIdx, i)}
+                            className="text-red-600 hover:text-red-800 p-2.5 rounded-xl transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Description editor outside table */}
-            <div className="mt-3">
-              <label className="text-sm font-semibold">
+            <div>
+              <label className="text-sm font-semibold text-gray-700">
                 Workout description
               </label>
               <textarea
-                className="w-full border rounded px-3 py-2 mt-1"
+                className="w-full border border-gray-300 rounded-xl px-4 py-3  focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all shadow-sm resize-none"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={3}
+                rows={4}
                 placeholder="Program notes, progression, equipment, tips..."
               />
             </div>
           </div>
         ) : (
-          <div className="space-y-2">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold text-lg">Daily Meals</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center ">
+              <h3 className="font-semibold text-lg text-gray-800">
+                Daily Meals
+              </h3>
               <button
                 onClick={handleAddMeal}
-                className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white text-sm rounded-xl hover:bg-cyan-800 transition-all shadow-md"
               >
-                + Add Meal
+                <Plus /> Add Meal
               </button>
             </div>
 
-            <div className="overflow-y-auto max-h-44 rounded-lg border border-gray-200">
-              <table className="min-w-full text-sm text-gray-700">
-                <thead className="bg-gray-100 text-gray-900">
+            <div className="rounded-xl border border-teal-100/50 overflow-x-auto">
+              <table className="min-w-full text-sm text-gray-700 table-fixed">
+                <thead className="bg-teal-100 text-gray-900 sticky top-0 rounded-t-xl">
                   <tr>
-                    <th className="py-2 px-3 text-left font-semibold">Name</th>
-                    <th className="py-2 px-3 text-left font-semibold">
+                    <th className="py-4 px-6 text-left font-semibold w-[200px]">
+                      Name
+                    </th>
+                    <th className="py-4 px-6 text-left font-semibold w-20">
                       Calories
                     </th>
-                    <th className="py-2 px-3 text-left font-semibold">
+                    <th className="py-4 px-6 text-left font-semibold w-20">
                       Protein
                     </th>
-                    <th className="py-2 px-3 text-left font-semibold">Carbs</th>
-                    <th className="py-2 px-3 text-left font-semibold">Fat</th>
-                    <th className="py-2 px-3"></th>
+                    <th className="py-4 px-6 text-left font-semibold w-20">
+                      Carbs
+                    </th>
+                    <th className="py-4 px-6 text-left font-semibold w-20">
+                      Fat
+                    </th>
+                    <th className="py-4 px-6 w-12"></th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-teal-100/50">
                   {dailyMeals.map((meal, i) => (
                     <tr
                       key={i}
-                      className={`border-t hover:bg-gray-50 cursor-pointer ${
-                        selectedMealIndex === i ? "bg-gray-50" : ""
+                      className={`hover:bg-teal-50/50 transition-colors cursor-pointer ${
+                        selectedMealIndex === i ? "bg-teal-50/30" : ""
                       }`}
                       onClick={() => setSelectedMealIndex(i)}
                     >
-                      <td className="py-2 px-3">
+                      <td className="py-1 px-3 align-top">
                         <input
-                          className={` px-2 py-1 w-full ${
-                            errors[`meal_${i}_name`] ? "border-red-400" : ""
+                          className={`px-4 py-2.5 w-full border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all shadow-sm ${
+                            errors[`meal_${i}_name`]
+                              ? "border-red-400 focus:ring-red-500"
+                              : ""
                           }`}
                           value={meal.name}
                           onChange={(e) =>
@@ -508,15 +649,17 @@ const TemplateModal = ({
                           onClick={(e) => e.stopPropagation()}
                         />
                         {errors[`meal_${i}_name`] && (
-                          <div className="text-xs text-red-500">
+                          <div className="text-xs text-red-500 mt-1">
                             {errors[`meal_${i}_name`]}
                           </div>
                         )}
                       </td>
-                      <td className="py-2 px-3">
+                      <td className="py-1 px-3 align-top">
                         <input
-                          className={` px-2 py-1 w-20 ${
-                            errors[`meal_${i}_calories`] ? "border-red-400" : ""
+                          className={`px-3 py-2.5 w-15 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all shadow-sm text-center ${
+                            errors[`meal_${i}_calories`]
+                              ? "border-red-400 focus:ring-red-500"
+                              : ""
                           }`}
                           value={meal.calories}
                           onChange={(e) =>
@@ -525,14 +668,14 @@ const TemplateModal = ({
                           onClick={(e) => e.stopPropagation()}
                         />
                         {errors[`meal_${i}_calories`] && (
-                          <div className="text-xs text-red-500">
+                          <div className="text-xs text-red-500 mt-1">
                             {errors[`meal_${i}_calories`]}
                           </div>
                         )}
                       </td>
-                      <td className="py-2 px-3">
+                      <td className="py-1 px-3 align-top">
                         <input
-                          className=" px-2 py-1 w-20"
+                          className="px-3 py-2.5 w-15 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all shadow-sm text-center"
                           value={meal.protein}
                           onChange={(e) =>
                             handleMealChange(i, "protein", e.target.value)
@@ -540,9 +683,9 @@ const TemplateModal = ({
                           onClick={(e) => e.stopPropagation()}
                         />
                       </td>
-                      <td className="py-2 px-3">
+                      <td className="py-1 px-3 align-top">
                         <input
-                          className=" px-2 py-1 w-20"
+                          className="px-3 py-2.5 w-15 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all shadow-sm text-center"
                           value={meal.carbs}
                           onChange={(e) =>
                             handleMealChange(i, "carbs", e.target.value)
@@ -550,9 +693,9 @@ const TemplateModal = ({
                           onClick={(e) => e.stopPropagation()}
                         />
                       </td>
-                      <td className="py-2 px-3">
+                      <td className="py-1 px-3 align-top">
                         <input
-                          className=" px-2 py-1 w-20"
+                          className="px-3 py-2.5 w-15 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all shadow-sm text-center"
                           value={meal.fat}
                           onChange={(e) =>
                             handleMealChange(i, "fat", e.target.value)
@@ -560,13 +703,13 @@ const TemplateModal = ({
                           onClick={(e) => e.stopPropagation()}
                         />
                       </td>
-                      <td className="text-center">
+                      <td className="py-1 px-3 text-center align-middle">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeleteMeal(i);
                           }}
-                          className="text-red-600 hover:text-red-800"
+                          className="text-red-600 hover:text-red-800 p-2.5 rounded-xl transition-colors"
                           aria-label="Delete meal"
                         >
                           <Trash2 size={16} />
@@ -578,17 +721,17 @@ const TemplateModal = ({
               </table>
             </div>
             {/* Description editor outside table */}
-            <div className="mt-3">
-              <label className="text-sm font-semibold">
+            <div className="mt-6">
+              <label className="text-sm font-semibold text-gray-700">
                 Selected meal description
               </label>
               {selectedMealIndex === null ? (
-                <div className="text-sm text-gray-500 mt-1">
+                <div className="text-sm text-gray-500 mt-2 p-4 bg-gray-50 rounded-xl">
                   Select a meal row to add/edit its description.
                 </div>
               ) : (
                 <textarea
-                  className="w-full border rounded px-3 py-2 mt-1"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 mt-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all shadow-sm resize-none"
                   value={dailyMeals[selectedMealIndex]?.description || ""}
                   onChange={(e) =>
                     handleMealChange(
@@ -597,7 +740,7 @@ const TemplateModal = ({
                       e.target.value
                     )
                   }
-                  rows={3}
+                  rows={4}
                 />
               )}
             </div>
@@ -607,9 +750,9 @@ const TemplateModal = ({
         <button
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className={`w-full py-3 font-semibold rounded-lg ${
+          className={`w-full py-3 font-semibold rounded-xl transition-all shadow-lg ${
             canSubmit
-              ? "bg-blue-600 text-white hover:bg-blue-700"
+              ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-700 hover:to-blue-700 focus:ring-2 focus:ring-cyan-500"
               : "bg-gray-200 text-gray-500 cursor-not-allowed"
           }`}
         >
