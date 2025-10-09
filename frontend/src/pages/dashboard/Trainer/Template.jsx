@@ -33,13 +33,12 @@ const IconButton = ({ onClick, icon, color = "gray", label }) => {
 };
 
 /* ----------------------------------------------
-   🔹 2. Refined Compact Template Card
+   🔹 2. Compact Template Card
 ------------------------------------------------*/
 const TemplateCard = ({ t, type, onEdit, onDelete }) => {
   const Icon = type === "workout" ? Dumbbell : Utensils;
   const isWorkout = type === "workout";
 
-  // Calculate totals
   const totalExercises = isWorkout
     ? t.program?.reduce((acc, day) => acc + (day.exercises?.length || 0), 0)
     : 0;
@@ -50,9 +49,9 @@ const TemplateCard = ({ t, type, onEdit, onDelete }) => {
       layout
       whileHover={{ y: -2, scale: 1.01 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className="group bg-white rounded-2xl border border-cyan-100 shadow-md hover:shadow-xl transition-all overflow-hidden relative"
+      className="group bg-white rounded-2xl border border-cyan-100 shadow-md hover:shadow-xl transition-all overflow-hidden relative flex-shrink-0"
     >
-      {/* Refined Header */}
+      {/* Header */}
       <div className="p-5 flex justify-between items-start gap-4 relative">
         <div className="flex gap-3 items-start flex-1">
           <motion.div
@@ -104,8 +103,8 @@ const TemplateCard = ({ t, type, onEdit, onDelete }) => {
         </motion.div>
       </div>
 
-      {/* Enhanced Full Data Preview with Increased Height */}
-      <div className="p-4 max-h-88 overflow-y-auto custom-scrollbar bg-gradient-to-b from-transparent to-cyan-50/30">
+      {/* Preview */}
+      <div className="p-4 max-h-60 overflow-y-auto custom-scrollbar bg-gradient-to-b from-transparent to-cyan-50/30">
         {isWorkout ? (
           t.program?.length ? (
             t.program.map((day, dayIdx) => (
@@ -183,7 +182,7 @@ const TemplateCard = ({ t, type, onEdit, onDelete }) => {
 };
 
 /* ----------------------------------------------
-   🔹 3. Polished Template Manager
+   🔹 3. Template Manager (Pagination)
 ------------------------------------------------*/
 const TemplateManager = () => {
   const { user, fetchUser } = useUserStore();
@@ -206,6 +205,8 @@ const TemplateManager = () => {
   const [formData, setFormData] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const cardsPerPage = 3;
 
   useEffect(() => {
     fetchUser();
@@ -254,17 +255,36 @@ const TemplateManager = () => {
   const templates = activeTab === "workout" ? workoutTemplates : dietTemplates;
   const isLoading = activeTab === "workout" ? isLoadingWorkout : isLoadingDiet;
 
+  // Pagination reset logic: Reset to page 1 if current page exceeds available pages after list length changes
+  useEffect(() => {
+    const totalPages = Math.ceil(templates.length / cardsPerPage);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [templates.length, currentPage, cardsPerPage]);
+
+  // pagination logic
+  const totalPages = Math.ceil(templates.length / cardsPerPage);
+  const startIndex = (currentPage - 1) * cardsPerPage;
+  const currentTemplates = templates.slice(
+    startIndex,
+    startIndex + cardsPerPage
+  );
+
   return (
-    <div className="p-6 h-full bg-cyan-50 rounded-2xl space-y-6 border border-cyan-100 shadow-sm">
-      {/* Polished Header */}
-      <div className="flex items-center justify-between ">
+    <div className="p-6 h-full w-full max-w-full bg-cyan-50 rounded-2xl space-y-6 border border-cyan-100 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-black pb-4">
         <div className="flex bg-white/80 backdrop-blur rounded-lg border border-cyan-100 overflow-hidden shadow-sm">
           {["workout", "diet"].map((tab) => (
             <motion.button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => {
+                setActiveTab(tab);
+                setCurrentPage(1);
+              }}
               whileHover={{ scale: 1.05 }}
-              className={`px-5 py-2.5 w-30 text-sm font-medium transition-all ${
+              className={`px-5 py-2.5 text-sm font-medium transition-all ${
                 activeTab === tab
                   ? "bg-cyan-600 text-white shadow-inner"
                   : "text-gray-600 hover:text-cyan-600"
@@ -298,27 +318,55 @@ const TemplateManager = () => {
           </motion.div>
           <p className="text-sm">Loading...</p>
         </div>
-      ) : templates?.length ? (
-        <motion.div
-          layout
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
-          {templates.map((t, idx) => (
-            <motion.div
-              key={t._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
-            >
-              <TemplateCard
-                t={t}
-                type={activeTab}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
-            </motion.div>
-          ))}
-        </motion.div>
+      ) : currentTemplates.length ? (
+        <>
+          {/* Cards Grid */}
+          <motion.div
+            layout
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
+          >
+            {currentTemplates.map((t, idx) => (
+              <motion.div
+                key={t._id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                <TemplateCard
+                  t={t}
+                  type={activeTab}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Pagination Controls */}
+          {templates.length > cardsPerPage && (
+            <div className="flex justify-center items-center gap-3 mt-8">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-cyan-600 text-white rounded-lg disabled:bg-gray-300"
+              >
+                Prev
+              </button>
+              <span className="text-gray-700 font-medium">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(p + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 bg-cyan-600 text-white rounded-lg disabled:bg-gray-300"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="text-center py-12 text-gray-400">
           <FileText className="mx-auto mb-3 opacity-60" size={32} />

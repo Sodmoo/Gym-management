@@ -17,6 +17,14 @@ import {
   deleteDietemplate,
 } from "../controllers/trainer.controller.js";
 import { verifyToken } from "../middleware/verifyToken.js";
+import {
+  createPlan,
+  deletePlan,
+  editPlan,
+  getPlan,
+  getPlansByMember,
+  getPlansByTrainer,
+} from "../controllers/plan.controller.js";
 
 const router = express.Router();
 
@@ -42,5 +50,12 @@ router.post("/createTemplate-diet", verifyToken, templateDiet);
 router.get("/diet-templates/:id", verifyToken, dietTemplates);
 router.put("/updatetemplate-diet/:id", verifyToken, updateDietTemplate);
 router.delete("/deletetemplate-diet/:id", verifyToken, deleteDietemplate);
+
+router.post("/createPlan", verifyToken, createPlan);
+router.delete("/deletePlan/:id", verifyToken, deletePlan);
+router.put("/editPlan/:id", verifyToken, editPlan);
+router.get("/getPlan/:id", verifyToken, getPlan);
+router.get("/getPlanM/:memberId", verifyToken, getPlansByMember);
+router.get("/getPlanT/:trainerId", verifyToken, getPlansByTrainer);
 
 export default router;

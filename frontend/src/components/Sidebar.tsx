@@ -69,8 +69,8 @@ const Sidebar = () => {
         icon: <BookOpen size={18} />,
       },
       {
-        path: "/trainer/materials",
-        label: "Upload Materials",
+        path: "/trainer/plans",
+        label: "Plans",
         icon: <FileUp size={18} />,
       },
     ],
