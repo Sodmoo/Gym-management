@@ -73,6 +73,16 @@ const Sidebar = () => {
         label: "Plans",
         icon: <FileUp size={18} />,
       },
+      {
+        path: "/trainer/progress",
+        label: "Progress Members",
+        icon: <FileUp size={18} />,
+      },
+      {
+        path: "/trainer/",
+        label: "Plans",
+        icon: <FileUp size={18} />,
+      },
     ],
     user: [
       {

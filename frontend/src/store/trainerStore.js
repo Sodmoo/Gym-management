@@ -4,6 +4,7 @@ import { axiosInstance } from "../lib/axios.js";
 export const useTrainerStore = create((set, get) => ({
   isLoading: false,
   trainers: [],
+  currentTrainer: null,
   setTrainers: (trainers) => set({ trainers }),
 
   getAllTrainers: async () => {
@@ -108,6 +109,7 @@ export const useTrainerStore = create((set, get) => ({
   getTrainerById: async (trainerId) => {
     try {
       const res = await axiosInstance.get(`/trainers/trainer/${trainerId}`);
+      set({ currentTrainer: res.data });
       set((state) => ({
         trainers: state.trainers.map((t) =>
           t.trainerId === trainerId ? { ...t, ...res.data } : t

@@ -23,6 +23,7 @@ import Trainers from "./pages/dashboard/Admin/Trainers";
 import Equipments from "./pages/dashboard/Admin/Equipments";
 import Plans from "./pages/dashboard/Admin/Plans";
 import TemplateManager from "./pages/dashboard/Trainer/Template";
+import Progress from "./pages/dashboard/Trainer/Progress";
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
@@ -112,6 +113,16 @@ const App = () => {
             <ProtectedRoute role="trainer">
               <DashboardLayout>
                 <PlansT />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trainer/progress"
+          element={
+            <ProtectedRoute role="trainer">
+              <DashboardLayout>
+                <Progress />
               </DashboardLayout>
             </ProtectedRoute>
           }

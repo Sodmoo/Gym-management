@@ -1,4 +1,5 @@
 // controllers/trainer.controller.js
+import User from "../models/user.model.js";
 import Trainer from "../models/trainer.model.js";
 import Member from "../models/member.model.js";
 import workoutTemplateSchema from "../models/Workout.model.js";
@@ -203,6 +204,7 @@ export const assignedStudents = async (req, res) => {
   }
 };
 
+// Workout template functions
 export const templateWorkout = async (req, res) => {
   try {
     const { trainerId, title, goal, description, durationWeeks, program } =
