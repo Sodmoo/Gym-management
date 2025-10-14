@@ -2,12 +2,17 @@ import mongoose from "mongoose";
 
 const exerciseSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  category: {
-    type: String, // жишээ нь "Chest", "Legs", "Back"
-  },
+  category: { type: String },
   sets: { type: Number, required: true },
   reps: { type: Number, required: true },
-  rest: { type: Number, default: 60 }, // секундээр
+  rest: { type: Number, default: 60 },
+});
+
+const programDaySchema = new mongoose.Schema({
+  dayName: { type: String, required: true }, // Monday, Tuesday, etc.
+  isRestDay: { type: Boolean, default: false }, // 💤 true = амралтын өдөр
+  notes: { type: String }, // option: “Active recovery”, “Stretching”
+  exercises: [exerciseSchema],
 });
 
 const workoutTemplateSchema = new mongoose.Schema(
@@ -17,30 +22,12 @@ const workoutTemplateSchema = new mongoose.Schema(
       ref: "Trainer",
       required: true,
     },
-    title: {
-      type: String,
-      required: true,
-    },
-    goal: {
-      type: String, // жишээ: "Weight Loss", "Strength Building"
-    },
-    description: {
-      type: String,
-    },
-    durationWeeks: {
-      type: Number,
-      default: 4, // template нийт хэдэн долоо хоногийн хөтөлбөр вэ
-    },
-    program: [
-      {
-        dayName: String, // "Monday"
-        exercises: [exerciseSchema],
-      },
-    ],
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
+    title: { type: String, required: true },
+    goal: { type: String },
+    description: { type: String },
+    durationWeeks: { type: Number, default: 4 },
+    program: [programDaySchema],
+    createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );

@@ -207,14 +207,21 @@ export const assignedStudents = async (req, res) => {
 // Workout template functions
 export const templateWorkout = async (req, res) => {
   try {
-    const { trainerId, title, goal, description, durationWeeks, program } =
-      req.body;
+    const {
+      trainerId,
+      title,
+      goal,
+      description,
+      category,
+      difficulty,
+      durationWeeks,
+      program,
+    } = req.body; // UPDATED: Add category, difficulty
 
-    // ✅ 1. Validation
+    // 1️⃣ Validation
     if (
       !trainerId ||
       !title ||
-      !program ||
       !Array.isArray(program) ||
       program.length === 0
     ) {
@@ -224,47 +231,53 @@ export const templateWorkout = async (req, res) => {
       });
     }
 
-    // ✅ 2. Program exercise structure шалгах
+    // 2️⃣ Program structure шалгах
     for (const day of program) {
-      if (
-        !day.dayName ||
-        !Array.isArray(day.exercises) ||
-        day.exercises.length === 0
-      ) {
+      if (!day.dayName) {
         return res.status(400).json({
-          message: `${
-            day.dayName || "Unknown day"
-          } -д дасгалуудыг зөв бөглөнө үү.`,
+          message: "Өдрийн нэр (dayName) заавал шаардлагатай.",
         });
       }
 
-      for (const ex of day.exercises) {
-        if (!ex.name || !ex.sets || !ex.reps) {
+      // UPDATED: Infer rest day from empty exercises (no need for isRestDay)
+      const isRestDay = !day.exercises || day.exercises.length === 0;
+      if (!isRestDay) {
+        if (!Array.isArray(day.exercises) || day.exercises.length === 0) {
           return res.status(400).json({
-            message: `Дасгал бүрийн нэр, sets, reps талбар шаардлагатай.`,
+            message: `${day.dayName} -д дасгалуудыг оруулна уу.`,
           });
+        }
+
+        for (const ex of day.exercises) {
+          if (!ex.name || !ex.sets || !ex.reps) {
+            return res.status(400).json({
+              message: `${day.dayName} дахь дасгал бүрийн name, sets, reps шаардлагатай.`,
+            });
+          }
         }
       }
     }
 
-    // ✅ 3. Шинэ workout template үүсгэх
+    // 3️⃣ Template үүсгэх
     const newTemplate = new workoutTemplateSchema({
       trainerId,
       title,
       goal,
       description,
+      category, // NEW: Save if provided
+      difficulty, // NEW: Save if provided
       durationWeeks,
       program,
     });
 
     await newTemplate.save();
 
-    // ✅ 4. Trainer-д холбоос хадгалах (optional)
+    // 4️⃣ Trainer-д холбоос хадгалах (optional)
     await Trainer.findByIdAndUpdate(trainerId, {
       $addToSet: { workoutPlans: newTemplate._id },
     });
 
-    // ✅ 5. Response буцаах
+    // 5️⃣ Response буцаах
     res.status(201).json({
       message: "Workout Template амжилттай үүслээ.",
       data: newTemplate,
@@ -278,39 +291,77 @@ export const templateWorkout = async (req, res) => {
   }
 };
 
+// ✅ Тухайн trainer-ийн бүх Template авах
 export const workoutTemplates = async (req, res) => {
   const trainerId = req.params.id;
+
   try {
-    const templates = await workoutTemplateSchema.find({ trainerId });
+    const templates = await workoutTemplateSchema.find({ trainerId }).sort({
+      createdAt: -1,
+    });
     res.status(200).json(templates);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching templates", error });
+    res.status(500).json({
+      message: "Template жагсаалт татахад алдаа гарлаа.",
+      error: error.message,
+    });
   }
 };
 
+// ✅ Template шинэчлэх
 export const updateWorkoutTemplate = async (req, res) => {
   const templateId = req.params.id;
   const updates = req.body;
 
   try {
+    const existingTemplate = await workoutTemplateSchema.findById(templateId); // FIXED: Use workoutTemplateSchema
+    if (!existingTemplate) {
+      return res.status(404).json({ message: "Template олдсонгүй." });
+    }
+
+    // 🧠 Хэрвээ program update хийгдсэн бол Rest Day logic дахин шалгах
+    if (updates.program) {
+      for (const day of updates.program) {
+        if (!day.dayName) {
+          return res.status(400).json({
+            message: "Program дотор dayName талбар байх шаардлагатай.",
+          });
+        }
+
+        if (!day.isRestDay) {
+          if (!Array.isArray(day.exercises) || day.exercises.length === 0) {
+            return res.status(400).json({
+              message: `${day.dayName} -д дасгалуудыг оруулна уу.`,
+            });
+          }
+
+          for (const ex of day.exercises) {
+            if (!ex.name || !ex.sets || !ex.reps) {
+              return res.status(400).json({
+                message: `${day.dayName} дахь дасгал бүрийн name, sets, reps шаардлагатай.`,
+              });
+            }
+          }
+        }
+      }
+    }
+
     const updatedTemplate = await workoutTemplateSchema.findByIdAndUpdate(
+      // FIXED: Use workoutTemplateSchema
       templateId,
       updates,
       { new: true }
     );
 
-    if (!updatedTemplate) {
-      return res.status(404).json({ message: "Template not found" });
-    }
-
     res.status(200).json({
-      message: "Template амжилттай шинэчлэгдлээ",
+      message: "Workout Template амжилттай шинэчлэгдлээ.",
       data: updatedTemplate,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Template шинэчлэхэд алдаа гарлаа", error });
+    res.status(500).json({
+      message: "Template шинэчлэхэд алдаа гарлаа.",
+      error: error.message,
+    });
   }
 };
 
@@ -334,18 +385,24 @@ export const templateDiet = async (req, res) => {
       trainerId,
       title,
       goal,
-      durationWeeks,
-      calories,
+      description,
+      category,
+      difficulty,
+      durationDays,
+      totalCalories,
       dailyMeals,
       notes,
-    } = req.body;
+    } = req.body; // UPDATED: Match frontend fields
 
     const newTemplate = new dietTemplateSchema({
       trainerId,
       title,
       goal,
-      durationWeeks,
-      calories,
+      description, // NEW
+      category, // NEW
+      difficulty, // NEW
+      durationDays, // FIXED: Use durationDays
+      totalCalories, // FIXED: Use totalCalories
       dailyMeals,
       notes,
     });

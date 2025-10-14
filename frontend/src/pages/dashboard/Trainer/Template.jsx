@@ -32,7 +32,7 @@ const TemplateManager = () => {
   const [editingId, setEditingId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const cardsPerPage = 3;
+  const cardsPerPage = 6;
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewType, setPreviewType] = useState(null);
   const [previewData, setPreviewData] = useState(null);
@@ -50,14 +50,19 @@ const TemplateManager = () => {
 
   const handleSave = async (data) => {
     if (activeTab === "workout") {
-      if (editingId) await updateWorkoutTemplate(editingId, data);
-      else await createWorkoutTemplate({ ...data, trainerId: user._id });
-      await getWorkoutTemplates(user._id);
+      if (editingId) {
+        await updateWorkoutTemplate(editingId, data);
+      } else {
+        await createWorkoutTemplate({ ...data, trainerId: user._id });
+      }
     } else {
-      if (editingId) await updateDietTemplate(editingId, data);
-      else await createDietTemplate({ ...data, trainerId: user._id });
-      await getDietTemplates(user._id);
+      if (editingId) {
+        await updateDietTemplate(editingId, data);
+      } else {
+        await createDietTemplate({ ...data, trainerId: user._id });
+      }
     }
+    // No refetch - assume store actions update the state locally
     setShowModal(false);
     setEditingId(null);
     setFormData({});
@@ -74,11 +79,10 @@ const TemplateManager = () => {
       return;
     if (activeTab === "workout") {
       await deleteWorkoutTemplate(id);
-      await getWorkoutTemplates(user._id);
     } else {
       await deleteDietTemplate(id);
-      await getDietTemplates(user._id);
     }
+    // No refetch - assume store actions update the state locally
   };
 
   const templates = activeTab === "workout" ? workoutTemplates : dietTemplates;
@@ -160,22 +164,26 @@ const TemplateManager = () => {
             layout
             className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
           >
-            {currentTemplates.map((t, idx) => (
-              <motion.div
-                key={t._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.08 }}
-              >
-                <TemplateCard
-                  t={t}
-                  type={activeTab}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onView={handleView}
-                />
-              </motion.div>
-            ))}
+            <AnimatePresence>
+              {currentTemplates.map((t, idx) => (
+                <motion.div
+                  key={t._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.2, delay: idx * 0.05 }}
+                  layout
+                >
+                  <TemplateCard
+                    t={t}
+                    type={activeTab}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onView={handleView}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </motion.div>
 
           {/* Pagination Controls */}
