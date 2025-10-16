@@ -147,42 +147,78 @@ export const trainerReject = async (req, res) => {
 
 export const getTrainerById = async (req, res) => {
   try {
-    const { id } = req.params; // id is trainerId (Trainer's _id)
-    // Find the Trainer document
+    const { id } = req.params; // Trainer ID (from Trainer collection)
     const trainer = await Trainer.findById(id).lean();
-    if (!trainer) return res.status(404).json({ message: "Trainer not found" });
 
-    // Find the User document for this trainer
-    const user = await User.findById(trainer.userId).lean();
-
-    // Merge User and Trainer info
-    let profileImage = null;
-    if (trainer.profileImage) {
-      profileImage = `${req.protocol}://${req.get("host")}/uploads/${
-        trainer.profileImage
-      }`;
+    if (!trainer) {
+      return res.status(404).json({ message: "Trainer not found" });
     }
 
-    // Populate students with Member info
+    // 🧠 Fetch trainer's user info
+    const user = await User.findById(trainer.userId)
+      .select("-password") // remove password
+      .lean();
+
+    // 🧩 Trainer profile image
+    const profileImage = trainer.profileImage
+      ? `${req.protocol}://${req.get("host")}/uploads/${trainer.profileImage}`
+      : `${req.protocol}://${req.get("host")}/uploads/default-profile.png`;
+
+    // 🧠 Populate students fully
     const students = await Promise.all(
-      (trainer.students || []).map(async (studentId) => {
-        const member = await Member.findById(studentId).lean();
+      (trainer.students || []).map(async (memberId) => {
+        const member = await Member.findById(memberId).lean();
         if (!member) return null;
-        const user = await User.findById(member.userId).lean();
+
+        const memberUser = await User.findById(member.userId)
+          .select("-password")
+          .lean();
+
+        if (!memberUser) return null;
+
         return {
-          ...user,
+          userId: memberUser._id,
           memberId: member._id,
-          ...member,
+          username: memberUser.username,
+          email: memberUser.email,
+          gender: memberUser.gender,
+          role: memberUser.role,
+          profileImage: member.profileImage
+            ? `${req.protocol}://${req.get("host")}/uploads/${
+                member.profileImage
+              }`
+            : `${req.protocol}://${req.get(
+                "host"
+              )}/uploads/default-profile.png`,
+          age: member.age,
+          phone: member.phone,
+          address: member.address,
+          height: member.height,
+          weight: member.weight,
+          goal: member.goal,
+          membership: member.membership,
+          subGoals: member.subGoals || [],
         };
       })
     );
 
+    // ✅ Final response structure
     res.json({
-      ...user,
       trainerId: trainer._id,
-      ...trainer,
+      userId: trainer.userId,
+      username: user?.username,
+      email: user?.email,
+      role: user?.role,
+      gender: user?.gender,
+      age: trainer.age,
+      phone: trainer.phone,
+      address: trainer.address,
+      experience: trainer.experience,
+      specialization: trainer.specialization,
+      certifications: trainer.certifications,
+      isconfirmed: trainer.isconfirmed,
       profileImage,
-      students: students.filter(Boolean), // Remove nulls
+      students: students.filter(Boolean),
     });
   } catch (error) {
     console.error("Error in getTrainerById:", error);

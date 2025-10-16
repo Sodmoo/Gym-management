@@ -3,13 +3,27 @@ import Member from "../models/member.model.js";
 import Trainer from "../models/trainer.model.js";
 import bcryptjs from "bcryptjs";
 
+// 🧹 Helper: remove sensitive fields from any User object
+const sanitizeUser = (user) => {
+  if (!user) return user;
+  const u = { ...user };
+  delete u.password;
+  delete u.resetToken;
+  delete u.resetTokenExpiry;
+  return u;
+};
+
+// ----------------------------
+// GET current user info
+// ----------------------------
 export const userinfo = async (req, res) => {
   try {
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const user = await User.findById(req.user.id).lean();
-    if (!user) return res.status(404).json({ message: "Not found" });
+
+    const user = await User.findById(req.user.id).select("-password").lean();
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     let extra = null;
     if (user.role === "user") {
@@ -18,7 +32,6 @@ export const userinfo = async (req, res) => {
       extra = await Trainer.findOne({ userId: user._id }).lean();
     }
 
-    // Safely get profileImage from extra (Member or Trainer)
     let profileImage = null;
     if (extra && extra.profileImage) {
       profileImage = `${req.protocol}://${req.get("host")}/uploads/${
@@ -27,9 +40,9 @@ export const userinfo = async (req, res) => {
     }
 
     res.json({
-      ...user,
+      ...sanitizeUser(user),
       ...(extra || {}),
-      profileImage, // Always returns the correct path or null
+      profileImage,
     });
   } catch (error) {
     console.error("Error in userinfo:", error);
@@ -37,12 +50,13 @@ export const userinfo = async (req, res) => {
   }
 };
 
+// ----------------------------
+// GET all users (role: user)
+// ----------------------------
 export const alluser = async (req, res) => {
   try {
-    // Get all users
-    const users = await User.find({ role: "user" }).lean();
+    const users = await User.find({ role: "user" }).select("-password").lean();
 
-    // For each user, get extra info from Member
     const usersWithExtra = await Promise.all(
       users.map(async (user) => {
         const extra = await Member.findOne({ userId: user._id }).lean();
@@ -52,11 +66,11 @@ export const alluser = async (req, res) => {
             extra.profileImage
           }`;
         }
-        // Rename extra._id to memberId to avoid overwriting user._id
+
         const { _id: memberId, ...extraRest } = extra || {};
         return {
-          ...user, // user._id is the User's id
-          memberId, // memberId is the Member's id
+          ...sanitizeUser(user),
+          memberId,
           ...extraRest,
           profileImage,
         };
@@ -70,31 +84,49 @@ export const alluser = async (req, res) => {
   }
 };
 
+// ----------------------------
+// UPDATE user info
+// ----------------------------
 export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
-    const updatedUser = await User.findByIdAndUpdate(id, updates, { new: true })
+
+    // Prevent password updates here unless handled separately
+    delete updates.password;
+
+    const updatedUser = await User.findByIdAndUpdate(id, updates, {
+      new: true,
+    })
+      .select("-password")
       .lean()
       .exec();
+
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.json({ message: "User updated successfully", user: updatedUser });
+
+    res.json({
+      message: "User updated successfully",
+      user: sanitizeUser(updatedUser),
+    });
   } catch (error) {
     console.error("Error in updateUser:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
+// ----------------------------
+// DELETE user
+// ----------------------------
 export const deleteUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     await User.findByIdAndDelete(req.params.id);
 
-    if (user.role === "user") {
+    if (user?.role === "user") {
       await Member.findOneAndDelete({ userId: user._id });
-    } else if (user.role === "trainer") {
+    } else if (user?.role === "trainer") {
       await Trainer.findOneAndDelete({ userId: user._id });
     }
 
@@ -105,32 +137,38 @@ export const deleteUser = async (req, res) => {
   }
 };
 
+// ----------------------------
+// GET all trainers
+// ----------------------------
 export const alltrainer = async (req, res) => {
   try {
-    // Always use .find() to get an array
-    const users = await User.find({ role: "trainer" }).lean();
+    const users = await User.find({ role: "trainer" })
+      .select("-password")
+      .lean();
 
-    // For each trainer, merge User and Trainer info
     const trainersWithExtra = await Promise.all(
-      (Array.isArray(users) ? users : []).map(async (user) => {
+      users.map(async (user) => {
         const extra = await Trainer.findOne({ userId: user._id }).lean();
         let profileImage = null;
         let trainerId = null;
         let extraRest = {};
+
         if (extra) {
-          trainerId = extra._id; // Save trainer's _id as trainerId
+          trainerId = extra._id;
           const { _id, ...rest } = extra;
           extraRest = rest;
+
           if (extra.profileImage) {
             profileImage = `${req.protocol}://${req.get("host")}/uploads/${
               extra.profileImage
             }`;
           }
         }
+
         return {
-          ...user, // user._id is the User's id
-          trainerId, // trainerId is the Trainer's id
-          ...extraRest, // all other trainer fields, except _id
+          ...sanitizeUser(user),
+          trainerId,
+          ...extraRest,
           profileImage,
         };
       })
@@ -143,12 +181,15 @@ export const alltrainer = async (req, res) => {
   }
 };
 
+// ----------------------------
+// GET all members (populated)
+// ----------------------------
 export const allMember = async (req, res) => {
   try {
     const members = await Member.find()
       .populate(
         "userId",
-        "surname username email role gender profileCompleted resetToken resetTokenExpiry createdAt updatedAt"
+        "surname username email role gender profileCompleted createdAt updatedAt"
       )
       .lean();
 
@@ -157,8 +198,9 @@ export const allMember = async (req, res) => {
     );
 
     const membersWithExtra = filteredMembers.map((member) => {
-      const user = member.userId; // Populated User object
+      const user = member.userId;
       let profileImage = null;
+
       if (member.profileImage) {
         profileImage = `${req.protocol}://${req.get("host")}/uploads/${
           member.profileImage
@@ -168,17 +210,17 @@ export const allMember = async (req, res) => {
       const { userId, ...memberRest } = member;
 
       return {
-        ...user, // User-ийн бүх талбар
-        userId: user._id, // <--- энд User ID-г нэмж байна
-        memberId: member._id, // Member-ийн _id
-        ...memberRest, // Member-ийн бусад талбарууд
+        ...sanitizeUser(user),
+        userId: user._id,
+        memberId: member._id,
+        ...memberRest,
         profileImage,
       };
     });
 
     res.json(membersWithExtra);
   } catch (error) {
-    console.error("Error in allMembers:", error);
+    console.error("Error in allMember:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

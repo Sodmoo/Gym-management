@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Trash2, X, Minus, Plus } from "lucide-react";
+import { Trash2, X, Plus } from "lucide-react";
 
 const TemplateModal = ({
   onClose,
@@ -1216,8 +1216,10 @@ const TemplateModal = ({
           disabled={!canSubmit}
           className={`w-full py-3 font-semibold rounded-md transition-all shadow-lg ${
             canSubmit
-              ? `bg-gradient-to-r from-${themeColor}-600 to-blue-600 text-white hover:from-${themeColor}-700 focus:ring-2 focus:ring-${themeColor}-500`
-              : "bg-gray-200 text-gray-500 cursor-not-allowed"
+              ? type === "diet"
+                ? "bg-green-600 hover:bg-green-700 text-white"
+                : "bg-cyan-600 hover:bg-cyan-700 text-white"
+              : "bg-gray-300 text-gray-500 opacity-50 cursor-not-allowed"
           }`}
         >
           {editingTemplate ? "Save Changes" : "Create Template"}

@@ -98,7 +98,7 @@ export const getPlansByMember = async (req, res) => {
       .populate("memberId")
       .populate({
         path: "memberId",
-        populate: { path: "userId", select: "username surname email gender" },
+        populate: { path: "userId", select: "-password" },
       })
       .populate("workoutTemplate")
       .populate("dietTemplate");
@@ -115,7 +115,7 @@ export const getPlansByTrainer = async (req, res) => {
     const plans = await PlanSchema.find({ trainerId })
       .populate({
         path: "memberId",
-        populate: { path: "userId", select: "username surname email gender" },
+        populate: { path: "userId", select: "-password" },
       })
       .populate("workoutTemplate")
       .populate("dietTemplate");
