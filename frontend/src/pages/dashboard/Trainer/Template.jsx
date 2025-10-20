@@ -111,7 +111,7 @@ const TemplateManager = () => {
   };
 
   return (
-    <div className="p-6 h-full w-full max-w-full bg-cyan-50 rounded-2xl space-y-6 border border-cyan-100 shadow-sm overflow-hidden">
+    <div className="p-6 h-full w-full max-w-full bg-cyan-50 rounded-lg space-y-6 border border-cyan-100 shadow-sm overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-black pb-4">
         <div className="flex bg-white/80 backdrop-blur rounded-lg border border-cyan-100 overflow-hidden shadow-sm">

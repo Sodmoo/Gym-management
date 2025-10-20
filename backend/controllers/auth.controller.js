@@ -38,7 +38,10 @@ export const register = async (req, res) => {
     await user.save();
 
     if (role === "user") {
-      const newMember = new Member({ userId: user._id, membership: null });
+      const newMember = new Member({
+        userId: user._id,
+        membership: { isActive: false },
+      });
       await newMember.save();
     } else if (role === "trainer") {
       const newTrainer = new Trainer({ userId: user._id });

@@ -5,6 +5,9 @@ import Member from "../models/member.model.js";
 import workoutTemplateSchema from "../models/Workout.model.js";
 import dietTemplateSchema from "../models/Diet.model.js";
 import mongoose from "mongoose";
+import measurementSchema from "../models/Measurement.model.js";
+import goalSchema from "../models/Goals.model.js";
+import PlanModel from "../models/Plan.model.js";
 
 export const trainers = async (req, res) => {
   try {
@@ -35,7 +38,7 @@ export const trainers = async (req, res) => {
 
 export const assignStudentToTrainer = async (req, res) => {
   try {
-    const { trainerId, memberId } = req.body; // These are userId values (from Users collection)
+    const { trainerId, memberId } = req.body;
 
     // Validate IDs
     if (
@@ -47,37 +50,41 @@ export const assignStudentToTrainer = async (req, res) => {
       });
     }
 
-    // Find trainer by userId
+    // Find trainer by ID
     const trainer = await Trainer.findById(trainerId);
     if (!trainer) {
       return res.status(404).json({ message: "Trainer not found" });
     }
 
-    // FIXED: Find member by userId (not by _id)
+    // Find member by ID
     const student = await Member.findById(memberId);
     if (!student) {
       return res.status(404).json({ message: "Member not found" });
     }
 
-    // Use member's _id for assignment (store Member ref in trainer.students)
-    const studentId = student._id; // This is the Member document's _id
+    // Add if not already assigned
+    const studentId = student._id;
     if (!trainer.students.includes(studentId)) {
       trainer.students.push(studentId);
       await trainer.save();
     }
 
-    // Optional: Repopulate students for full response
-    await trainer.populate("students", "userId age phone goal"); // Select relevant fields
+    // ✅ Nested populate: Member → User
+    await trainer.populate({
+      path: "students", // First populate members
+      populate: {
+        path: "userId", // Then populate each member's user
+        select: "name email role profileImage", // Choose which user fields to include
+      },
+      select: "userId joinedDate progress", // Choose which member fields to include
+    });
 
     res.json({
       message: "Student assigned successfully",
-      trainer: {
-        ...trainer.toObject(), // Convert to plain object
-        students: trainer.students, // Already populated
-      },
+      trainer,
     });
   } catch (err) {
-    console.error("Assign student error:", err); // Log for debugging
+    console.error("Assign student error:", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -177,12 +184,10 @@ export const getTrainerById = async (req, res) => {
         if (!memberUser) return null;
 
         return {
-          userId: memberUser._id,
           memberId: member._id,
-          username: memberUser.username,
-          email: memberUser.email,
-          gender: memberUser.gender,
-          role: memberUser.role,
+          ...member,
+          userId: memberUser._id,
+          ...memberUser,
           profileImage: member.profileImage
             ? `${req.protocol}://${req.get("host")}/uploads/${
                 member.profileImage
@@ -190,14 +195,6 @@ export const getTrainerById = async (req, res) => {
             : `${req.protocol}://${req.get(
                 "host"
               )}/uploads/default-profile.png`,
-          age: member.age,
-          phone: member.phone,
-          address: member.address,
-          height: member.height,
-          weight: member.weight,
-          goal: member.goal,
-          membership: member.membership,
-          subGoals: member.subGoals || [],
         };
       })
     );
@@ -494,5 +491,209 @@ export const deleteDietemplate = async (req, res) => {
     res.status(200).json({ message: "Diet Template deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Error deleting template", error });
+  }
+};
+
+// Measurement and Goal functions
+export const addmeasurement = async (req, res) => {
+  try {
+    const data = req.body;
+
+    // Automatically find and assign plan for the member
+    if (!data.member) {
+      return res.status(400).json({ message: "Member ID is required" });
+    }
+
+    const plan = await PlanModel.findOne({ memberId: data.member });
+    if (!plan) {
+      return res
+        .status(404)
+        .json({ message: "No assigned plan found for this member" });
+    }
+
+    // Add plan to data
+    data.plan = plan._id;
+
+    // 1️⃣ Шинэ measurement үүсгэх
+    const newMeasurement = new measurementSchema(data);
+
+    await newMeasurement.save();
+
+    // 2️⃣ Member-ийн goals-г олох
+    const goals = await goalSchema.find({ member: data.member });
+
+    // 3️⃣ Goals-ийн currentValue-г шинэчлэх
+    for (let goal of goals) {
+      switch (goal.goalType) {
+        case "weight":
+          goal.currentValue = data.weight;
+          break;
+        case "bodyFat":
+          goal.currentValue = data.bodyFat;
+          break;
+        case "muscleMass":
+          goal.currentValue = data.muscleMass;
+          break;
+        case "waist":
+          goal.currentValue = data.waist;
+          break;
+        // шаардлагатай бол бусад goalType нэмнэ
+        default:
+          break;
+      }
+      await goal.save();
+    }
+
+    res.status(201).json({
+      message: "Measurement амжилттай үүслээ, goals шинэчлэгдсэн",
+      data: newMeasurement,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Measurement алдаа гарлаа", error });
+  }
+};
+
+export const editmeasurement = async (req, res) => {
+  try {
+    const updated = await measurementSchema.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    if (!updated)
+      return res
+        .status(404)
+        .json({ success: false, message: "Measurement not found" });
+
+    res.status(200).json({
+      success: true,
+      message: "Measurement updated successfully",
+      data: updated,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const deleteMeasurement = async (req, res) => {
+  try {
+    const deleted = await measurementSchema.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ message: "Measurement not found" });
+    }
+    res.status(200).json({ message: "Measurement deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting measurement", error });
+  }
+};
+
+export const getMeasurementsByMember = async (memberId) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(memberId)) {
+      throw new Error("Invalid memberId: Must be a valid ObjectId");
+    }
+    const measurements = await measurementSchema
+      .find({ member: memberId })
+      .sort({ date: -1 });
+    return measurements;
+  } catch (error) {
+    console.error("Error fetching measurements:", error);
+    throw error;
+  }
+};
+
+export const getMeasurements = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const filter = id ? { member: id } : {};
+    const measurements = await measurementSchema
+      .find(filter)
+      .sort({ date: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: measurements.length,
+      data: measurements,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getMeasurementsByPlan = async (planId) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(planId)) {
+      throw new Error("Invalid planId: Must be a valid ObjectId");
+    }
+    const measurements = await measurementSchema
+      .find({ plan: planId })
+      .sort({ date: -1 });
+    return measurements;
+  } catch (error) {
+    console.error("Error fetching measurements by plan:", error);
+    throw error;
+  }
+};
+
+export const addGoal = async (req, res) => {
+  try {
+    const data = req.body;
+    const newGoal = new goalSchema(data);
+    await newGoal.save();
+    res.status(201).json({ message: "Goal амжилттай үүслээ", data: newGoal });
+  } catch (error) {
+    res.status(500).json({ message: "Goal үүсгэхэд алдаа гарлаа", error });
+  }
+};
+
+export const editGoal = async (req, res) => {
+  try {
+    const updated = await goalSchema.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    if (!updated)
+      return res
+        .status(404)
+        .json({ success: false, message: "Goal not found" });
+    res.status(200).json({
+      success: true,
+      message: "Goal updated successfully",
+      data: updated,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const deleteGoal = async (req, res) => {
+  try {
+    const deleted = await goalSchema.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ message: "Goal not found" });
+    }
+    res.status(200).json({ message: "Goal deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting goal", error });
+  }
+};
+
+export const getGoalsByMember = async (req, res) => {
+  try {
+    const memberId = req.params.memberId;
+    if (!mongoose.Types.ObjectId.isValid(memberId)) {
+      return res.status(400).json({ message: "Invalid memberId" });
+    }
+    const goals = await goalSchema.find({ member: memberId });
+    res.status(200).json({ success: true, count: goals.length, data: goals });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

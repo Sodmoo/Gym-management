@@ -15,6 +15,15 @@ import {
   dietTemplates,
   updateDietTemplate,
   deleteDietemplate,
+  addmeasurement,
+  editmeasurement,
+  deleteMeasurement,
+  getMeasurements,
+  addGoal,
+  editGoal,
+  deleteGoal,
+  getGoalsByMember,
+  getMeasurementsByMember,
 } from "../controllers/trainer.controller.js";
 import { verifyToken } from "../middleware/verifyToken.js";
 import {
@@ -57,5 +66,15 @@ router.put("/editPlan/:id", verifyToken, editPlan);
 router.get("/getPlan/:id", verifyToken, getPlan);
 router.get("/getPlanM/:memberId", verifyToken, getPlansByMember);
 router.get("/getPlanT/:trainerId", verifyToken, getPlansByTrainer);
+
+router.post("/addMeasurement", verifyToken, addmeasurement);
+router.put("/updateMeasurement/:id", verifyToken, editmeasurement);
+router.delete("/deleteMeasurement/:id", verifyToken, deleteMeasurement);
+router.get("/getMeasurement/:id", verifyToken, getMeasurements);
+
+router.post("/addGoal", verifyToken, addGoal);
+router.put("/updateGoal/:id", verifyToken, editGoal);
+router.delete("/deleteGoal/:id", verifyToken, deleteGoal);
+router.get("/getGoals/:memberId", verifyToken, getGoalsByMember);
 
 export default router;

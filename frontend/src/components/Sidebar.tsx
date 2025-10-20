@@ -11,7 +11,10 @@ import {
   ClipboardList,
   BookOpen,
   GraduationCap,
-  FileUp,
+  TrendingUp,
+  SquareChartGantt,
+  CalendarSync,
+  CalendarDays,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -66,22 +69,22 @@ const Sidebar = () => {
       {
         path: "/trainer/template",
         label: "Templates",
-        icon: <BookOpen size={18} />,
+        icon: <CalendarSync size={18} />,
       },
       {
         path: "/trainer/plans",
         label: "Plans",
-        icon: <FileUp size={18} />,
+        icon: <SquareChartGantt size={18} />,
       },
       {
         path: "/trainer/progress",
         label: "Progress Members",
-        icon: <FileUp size={18} />,
+        icon: <TrendingUp size={18} />,
       },
       {
-        path: "/trainer/",
-        label: "Plans",
-        icon: <FileUp size={18} />,
+        path: "/trainer/schedule",
+        label: "Schedule",
+        icon: <CalendarDays size={18} />,
       },
     ],
     user: [
