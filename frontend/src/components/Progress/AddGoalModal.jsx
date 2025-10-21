@@ -83,7 +83,7 @@ const AddGoalModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
         <div className="p-6 border-b border-gray-200 flex justify-between items-center">
           <h3 className="text-xl font-semibold text-gray-800 flex items-center space-x-2">
             <Plus size={20} className="text-blue-500" />
-            <span>Add New Goal</span>
+            <span>Шинэ зорилго нэмэх</span>
           </h3>
           <button
             onClick={onClose}
@@ -97,9 +97,9 @@ const AddGoalModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
         <div className="border-b border-gray-200">
           <nav className="flex space-x-1 px-6">
             {[
-              { id: "basic", label: "Basic Info", icon: Users },
-              { id: "details", label: "Details", icon: Ruler },
-              { id: "notes", label: "Notes", icon: MessageCircle },
+              { id: "basic", label: "Үндсэн мэдээлэл", icon: Users },
+              { id: "details", label: "Дэлгэрэнгүй", icon: Ruler },
+              { id: "notes", label: "Тэмдэглэл", icon: MessageCircle },
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -127,21 +127,21 @@ const AddGoalModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Goal Title *
+                  Зорилгын гарчиг *
                 </label>
                 <input
                   type="text"
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
-                  placeholder="e.g., Reach Target Weight of 150 lbs"
+                  placeholder="жишээ нь, 150 lbs жин хүрэх"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
+                  Тайлбар
                 </label>
                 <textarea
                   name="description"
@@ -149,7 +149,7 @@ const AddGoalModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
                   onChange={handleInputChange}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="Brief description of this goal..."
+                  placeholder="Энэ зорилгын тухай товч тайлбар..."
                 />
               </div>
             </div>
@@ -159,11 +159,11 @@ const AddGoalModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
           {activeTab === "details" && (
             <div className="space-y-4">
               <h4 className="text-lg font-medium text-gray-800">
-                Goal Details
+                Зорилгын дэлгэрэнгүй
               </h4>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Goal Type *
+                  Зорилгын төрөл *
                 </label>
                 <div className="relative">
                   <select
@@ -173,11 +173,11 @@ const AddGoalModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
                     className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
                     required
                   >
-                    <option value="">Select a type</option>
-                    <option value="weight">Weight Loss/Gain</option>
-                    <option value="bodyFat">Body Fat Reduction</option>
-                    <option value="muscleMass">Muscle Mass Gain</option>
-                    <option value="strength">Strength Improvement</option>
+                    <option value="">Төрөл сонгоно уу</option>
+                    <option value="weight">Жин хасах/нэмэх</option>
+                    <option value="bodyFat">Өөх бууруулах</option>
+                    <option value="muscleMass">Булчингийн масс нэмэх</option>
+                    <option value="strength">Хүч чадал сайжруулах</option>
                   </select>
                   <Target
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
@@ -187,7 +187,7 @@ const AddGoalModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Target Value *
+                  Зорилтот утга *
                 </label>
                 <div className="flex space-x-2">
                   <input
@@ -195,7 +195,7 @@ const AddGoalModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
                     name="targetValue"
                     value={formData.targetValue}
                     onChange={handleInputChange}
-                    placeholder="e.g., 150"
+                    placeholder="жишээ нь, 150"
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     step="0.1"
                     required
@@ -207,7 +207,7 @@ const AddGoalModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Current Value
+                  Одоогийн утга
                 </label>
                 <div className="flex space-x-2">
                   <input
@@ -215,7 +215,7 @@ const AddGoalModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
                     name="currentValue"
                     value={formData.currentValue}
                     onChange={handleInputChange}
-                    placeholder="e.g., 165"
+                    placeholder="жишээ нь, 165"
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     step="0.1"
                   />
@@ -226,7 +226,7 @@ const AddGoalModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Priority *
+                  Чухал байдал *
                 </label>
                 <div className="relative">
                   <select
@@ -236,7 +236,7 @@ const AddGoalModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
                     className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
                     required
                   >
-                    <option value="Medium">Medium</option>
+                    <option value="Medium">Meduim</option>
                     <option value="High">High</option>
                     <option value="Low">Low</option>
                   </select>
@@ -253,11 +253,11 @@ const AddGoalModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
           {activeTab === "notes" && (
             <div className="space-y-4">
               <h4 className="text-lg font-medium text-gray-800">
-                Additional Notes
+                Нэмэлт тэмдэглэл
               </h4>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notes
+                  Тэмдэглэл
                 </label>
                 <textarea
                   name="notes"
@@ -265,7 +265,7 @@ const AddGoalModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
                   onChange={handleInputChange}
                   rows={6}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="Add any additional notes or reminders for this goal..."
+                  placeholder="Энэ зорилгын тухай нэмэлт тэмдэглэл эсвэл сануулга нэмнэ үү..."
                 />
               </div>
             </div>
@@ -278,14 +278,14 @@ const AddGoalModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
               onClick={onClose}
               className="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              Болих
             </button>
             <button
               type="submit"
               className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center space-x-2"
             >
               <CheckCircle size={16} />
-              <span>Add Goal</span>
+              <span>Зорилго нэмэх</span>
             </button>
           </div>
         </form>

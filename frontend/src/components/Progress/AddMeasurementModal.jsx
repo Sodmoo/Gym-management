@@ -84,7 +84,7 @@ const AddMeasurementModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
         <div className="p-6 border-b border-gray-200 flex justify-between items-center">
           <h3 className="text-xl font-semibold text-gray-800 flex items-center space-x-2">
             <Plus size={20} className="text-blue-500" />
-            <span>Add New Measurement</span>
+            <span>Шинэ хэмжилт нэмэх</span>
           </h3>
           <button
             onClick={onClose}
@@ -98,9 +98,9 @@ const AddMeasurementModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
         <div className="border-b border-gray-200">
           <nav className="flex space-x-1 px-6">
             {[
-              { id: "basicInfo", label: "Basic Info", icon: Calendar },
-              { id: "measurements", label: "Measurements", icon: Ruler },
-              { id: "notes", label: "Notes", icon: FileText },
+              { id: "basicInfo", label: "Үндсэн мэдээлэл", icon: Calendar },
+              { id: "measurements", label: "Хэмжилтүүд", icon: Ruler },
+              { id: "notes", label: "Тэмдэглэл", icon: FileText },
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -127,7 +127,7 @@ const AddMeasurementModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date *
+                  Огноо *
                 </label>
                 <div className="relative">
                   <input
@@ -146,7 +146,7 @@ const AddMeasurementModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Weight (lbs)
+                  Жин (lbs)
                 </label>
                 <input
                   type="number"
@@ -159,7 +159,7 @@ const AddMeasurementModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Body Fat (%)
+                  Өөхний хувь (%)
                 </label>
                 <input
                   type="number"
@@ -172,7 +172,7 @@ const AddMeasurementModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Muscle Mass (lbs)
+                  Булчингийн масс (lbs)
                 </label>
                 <input
                   type="number"
@@ -190,12 +190,12 @@ const AddMeasurementModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
           {activeTab === "measurements" && (
             <div className="space-y-4">
               <h4 className="text-lg font-medium text-gray-800">
-                Body Measurements
+                Биеийн хэмжилтүүд
               </h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Waist (in)
+                    Бүс (инч)
                   </label>
                   <input
                     type="number"
@@ -208,7 +208,7 @@ const AddMeasurementModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Chest (in)
+                    Хүзүү (инч)
                   </label>
                   <input
                     type="number"
@@ -221,7 +221,7 @@ const AddMeasurementModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Arms (in)
+                    Гар (инч)
                   </label>
                   <input
                     type="number"
@@ -234,7 +234,7 @@ const AddMeasurementModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Thighs (in)
+                    Гуя (инч)
                   </label>
                   <input
                     type="number"
@@ -253,11 +253,11 @@ const AddMeasurementModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
           {activeTab === "notes" && (
             <div className="space-y-4">
               <h4 className="text-lg font-medium text-gray-800">
-                Additional Notes
+                Нэмэлт тэмдэглэл
               </h4>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notes
+                  Тэмдэглэл
                 </label>
                 <textarea
                   name="notes"
@@ -265,7 +265,7 @@ const AddMeasurementModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
                   onChange={handleInputChange}
                   rows={6}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="Add any notes about this measurement..."
+                  placeholder="Энэ хэмжилтийн тухай тэмдэглэл нэмнэ үү..."
                 />
               </div>
             </div>
@@ -278,14 +278,14 @@ const AddMeasurementModal = ({ isOpen, onClose, onSubmit, selectedMember }) => {
               onClick={onClose}
               className="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              Болих
             </button>
             <button
               type="submit"
               className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center space-x-2"
             >
               <CheckCircle size={16} />
-              <span>Add Measurement</span>
+              <span>Хэмжилт нэмэх</span>
             </button>
           </div>
         </form>

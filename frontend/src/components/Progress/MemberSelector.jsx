@@ -13,27 +13,27 @@ const MemberSelector = ({
   searchRef,
 }) => {
   return (
-    <div className="relative z-50 bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-md mb-6 border border-white/50">
+    <div className="relative z-1 bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-md mb-6 border border-white/50">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-gray-800 flex items-center space-x-2">
           <Users size={20} />
-          <span>Select Member</span>
+          <span>Гишүүн сонгох</span>
         </h2>
         <button
           className="flex items-center py-2 px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 shadow-md transition-all"
           onClick={handleBrowseAll}
         >
           <Users size={16} className="mr-2" />
-          <span>Browse All</span>
+          <span>Бүгдийг үзэх</span>
         </button>
       </div>
       <p className="text-gray-600 text-sm mb-4">
-        Choose a member to track their progress
+        Ахицыг хянах гишүүн сонгоно уу
       </p>
       <div ref={searchRef} className="relative mb-4">
         <input
           type="text"
-          placeholder="Search members by name, email, or specialization..."
+          placeholder="Нэр, имэйл, эсвэл мэргэжлээр гишүүдийг хайх..."
           className="w-full pl-4 pr-12 py-3 bg-white/50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
           value={searchTerm}
           onChange={(e) => {
@@ -74,7 +74,7 @@ const MemberSelector = ({
         )}
         {showDropdown && searchTerm && filteredMembers.length === 0 && (
           <div className="absolute z-[100] w-full bg-white border border-gray-200 rounded-lg mt-1 p-4 text-gray-500 text-sm shadow-xl">
-            No members found.
+            Гишүүн олдсонгүй.
           </div>
         )}
       </div>

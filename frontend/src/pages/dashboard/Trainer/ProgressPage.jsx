@@ -1,8 +1,7 @@
-// ProgressPage.jsx (Updated with jspdf-autotable import for PDF tables)
+// ProgressPage.jsx (Updated with Filler plugin for Chart.js fill option)
 
 import React, { useEffect, useState, useRef } from "react";
 import jsPDF from "jspdf"; // Import jsPDF for PDF export (npm install jspdf)
-import "jspdf-autotable"; // Import autotable plugin (npm install jspdf-autotable)
 import {
   Users,
   TrendingUp,
@@ -13,6 +12,7 @@ import {
   Scale, // For weight icon
   Percent, // For body fat
   FileBarChart, // For muscle mass or similar
+  CheckCircle, // Added for completed icon in getGoalIcon
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -25,6 +25,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler, // Added for fill option in line chart
 } from "chart.js";
 
 import { useUserStore } from "../../../store/userStore";
@@ -51,7 +52,8 @@ ChartJS.register(
   ArcElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler // Added for fill option
 );
 
 const ProgressPage = () => {
@@ -89,8 +91,8 @@ const ProgressPage = () => {
 
   useEffect(() => {
     if (selectedMember?._id) {
-      getMeasurements(selectedMember._id); // Fixed: use _id consistently
-      getGoals(selectedMember._id); // Fixed: use _id consistently
+      getMeasurements(selectedMember.memberId);
+      getGoals(selectedMember.memberId);
     }
   }, [selectedMember, getMeasurements, getGoals]);
 
@@ -138,9 +140,9 @@ const ProgressPage = () => {
   }, [showDropdown]);
 
   const tabs = [
-    { id: "overview", label: "Overview", icon: BarChart3 },
-    { id: "measurements", label: "Measurements", icon: Ruler },
-    { id: "goals", label: "Goals", icon: Target },
+    { id: "overview", label: "Тойм", icon: BarChart3 },
+    { id: "measurements", label: "Хэмжилт", icon: Ruler },
+    { id: "goals", label: "Зорилго", icon: Target },
   ];
 
   const isMembershipActive = selectedMember?.membership?.isActive;
@@ -378,7 +380,7 @@ const ProgressPage = () => {
 
     // Save PDF
     doc.save(
-      `ахицын-тайлан-${selectedMember.username || "гишүүн"}-${currentDate}.pdf` // Fixed filename typo
+      `ahiç-тайлан-${selectedMember.username || "гишүүн"}-${currentDate}.pdf`
     );
   };
 
@@ -484,7 +486,7 @@ const ProgressPage = () => {
   const handleSubmitMeasurement = async (payload) => {
     try {
       // Store's addMeasurement already refetches measurements and goals
-      await addMeasurement({ ...payload, member: selectedMember._id }); // Fixed: use _id consistently
+      await addMeasurement({ ...payload, member: selectedMember.memberId });
       // No need for extra getMeasurements/getGoals calls
     } catch (error) {
       console.error("Error adding measurement:", error);
@@ -526,7 +528,7 @@ const ProgressPage = () => {
     try {
       const payload = {
         ...goalData,
-        member: selectedMember._id, // Fixed: use _id consistently
+        member: selectedMember.memberId, // Consistent with other calls (use memberId)
       };
       // Store's addGoal already refetches goals
       await addGoal(payload);
@@ -565,22 +567,44 @@ const ProgressPage = () => {
     }
   };
 
-  const getGoalIcon = (goalType) => {
+  const isGoalCompleted = (progress) => progress >= 100;
+
+  const getGoalIcon = (goalType, isCompleted = false) => {
+    let icon;
     switch (goalType) {
       case "weight":
-        return <Scale size={20} className="text-white" />;
+        icon = <Scale size={20} className="text-white" />;
+        break;
       case "bodyFat":
-        return <Percent size={20} className="text-white" />;
+        icon = <Percent size={20} className="text-white" />;
+        break;
       case "muscleMass":
-        return <Award size={20} className="text-white" />;
+        icon = <Award size={20} className="text-white" />;
+        break;
       case "strength":
-        return <TrendingUp size={20} className="text-white" />;
+        icon = <TrendingUp size={20} className="text-white" />;
+        break;
       default:
-        return <Target size={20} className="text-white" />;
+        icon = <Target size={20} className="text-white" />;
     }
+    if (isCompleted) {
+      return (
+        <div className="relative flex items-center justify-center">
+          {icon}
+          <CheckCircle
+            size={12}
+            className="absolute -top-0.5 -right-0.5 text-green-200"
+          />
+        </div>
+      );
+    }
+    return icon;
   };
 
-  const getGoalColor = (goalType) => {
+  const getGoalColor = (goalType, isCompleted = false) => {
+    if (isCompleted) {
+      return "bg-green-400";
+    }
     switch (goalType) {
       case "weight":
         return "bg-green-500";
@@ -756,6 +780,7 @@ const ProgressPage = () => {
                   getGoalColor={getGoalColor}
                   getPriorityColor={getPriorityColor}
                   getUnit={getUnitPage}
+                  isGoalCompleted={isGoalCompleted}
                 />
               )}
             </div>

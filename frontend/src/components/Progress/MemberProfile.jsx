@@ -11,7 +11,7 @@ const MemberProfile = ({ selectedMember, isMembershipActive }) => {
             <img
               src={selectedMember.profileImage}
               alt={`${selectedMember.username} ${selectedMember.surname}`}
-              className="w-24 h-24 rounded-full object-cover border-4 border-blue-500 shadow-lg"
+              className="w-24 h-24 rounded-full object-cover border-2 border-cyan-400 shadow-lg"
             />
           ) : (
             <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center border-4 border-gray-300">
@@ -34,7 +34,7 @@ const MemberProfile = ({ selectedMember, isMembershipActive }) => {
           </p>
           {selectedMember.phone && (
             <p className="text-sm text-gray-500 mt-1">
-              Phone: {selectedMember.phone}
+              Утас: {selectedMember.phone}
             </p>
           )}
         </div>
@@ -46,7 +46,7 @@ const MemberProfile = ({ selectedMember, isMembershipActive }) => {
           {selectedMember.age && (
             <div className="bg-gray-50 p-3 rounded-lg text-center">
               <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Age
+                Нас
               </div>
               <div className="text-lg font-bold text-gray-900">
                 {selectedMember.age}
@@ -56,7 +56,7 @@ const MemberProfile = ({ selectedMember, isMembershipActive }) => {
           {selectedMember.gender && (
             <div className="bg-gray-50 p-3 rounded-lg text-center">
               <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Gender
+                Хүйс
               </div>
               <div className="text-lg font-bold text-gray-900 capitalize">
                 {selectedMember.gender}
@@ -66,7 +66,7 @@ const MemberProfile = ({ selectedMember, isMembershipActive }) => {
           {selectedMember.address && (
             <div className="bg-gray-50 p-3 rounded-lg text-center">
               <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Address
+                Хаяг
               </div>
               <div className="text-sm font-bold text-gray-900 break-words">
                 {selectedMember.address}
@@ -76,25 +76,25 @@ const MemberProfile = ({ selectedMember, isMembershipActive }) => {
           {selectedMember.membership?.startDate && (
             <div className="bg-gray-50 p-3 rounded-lg text-center">
               <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Started At
+                Эхэлсэн огноо
               </div>
               <div className="text-lg font-bold text-gray-900">
                 {new Date(
                   selectedMember.membership.startDate
-                ).toLocaleDateString()}
+                ).toLocaleDateString("mn-MN")}
               </div>
             </div>
           )}
           <div className="bg-gray-50 p-3 rounded-lg text-center">
             <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Membership
+              Гишүүнчлэл
             </div>
             <div
               className={`text-lg font-bold ${
                 isMembershipActive ? "text-green-600" : "text-red-600"
               }`}
             >
-              {isMembershipActive ? "Active" : "Inactive"}
+              {isMembershipActive ? "Идэвхтэй" : "Идэвхгүй"}
             </div>
           </div>
         </div>

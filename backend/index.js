@@ -10,6 +10,7 @@ import equipmentRoute from "./routes/equipment.route.js";
 import membershipTypeRoute from "./routes/membershipType.route.js";
 import trainerRoute from "./routes/trainer.route.js";
 import memberRoute from "./routes/member.route.js";
+import scheduleRoute from "./routes/schedule.route.js";
 import "./controllers/membership_helper/membership.cron.js";
 
 dotenv.config();
@@ -28,6 +29,7 @@ app.use("/api/trainers", trainerRoute);
 app.use("/api/members", memberRoute);
 app.use("/uploads", express.static("uploads"));
 app.use("/api/membership-types", membershipTypeRoute);
+app.use("/api/schedules", scheduleRoute);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
