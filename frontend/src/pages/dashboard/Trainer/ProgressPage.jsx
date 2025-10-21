@@ -1,5 +1,8 @@
-// ProgressPage.jsx
+// ProgressPage.jsx (Updated with jspdf-autotable import for PDF tables)
+
 import React, { useEffect, useState, useRef } from "react";
+import jsPDF from "jspdf"; // Import jsPDF for PDF export (npm install jspdf)
+import "jspdf-autotable"; // Import autotable plugin (npm install jspdf-autotable)
 import {
   Users,
   TrendingUp,
@@ -73,7 +76,7 @@ const ProgressPage = () => {
   const [showAddGoalModal, setShowAddGoalModal] = useState(false); // New for goals
 
   // New states for overview analytics
-  const [selectedPeriod, setSelectedPeriod] = useState("3 months");
+  const [selectedPeriod, setSelectedPeriod] = useState("3months"); // Updated default to match key
   const [selectedMetric, setSelectedMetric] = useState("weight");
 
   const searchRef = useRef(null);
@@ -86,8 +89,8 @@ const ProgressPage = () => {
 
   useEffect(() => {
     if (selectedMember?._id) {
-      getMeasurements(selectedMember.memberId);
-      getGoals(selectedMember.memberId);
+      getMeasurements(selectedMember._id); // Fixed: use _id consistently
+      getGoals(selectedMember._id); // Fixed: use _id consistently
     }
   }, [selectedMember, getMeasurements, getGoals]);
 
@@ -142,21 +145,42 @@ const ProgressPage = () => {
 
   const isMembershipActive = selectedMember?.membership?.isActive;
 
-  // Helper to filter measurements by period
+  // Fixed helper to filter measurements by period (handles "alltime" explicitly)
   const getPeriodStartDate = (period) => {
     const now = new Date();
-    const months = { "1 month": 1, "3 months": 3, "6 months": 6, "1 year": 12 }[
-      period.toLowerCase()
-    ];
-    const start = new Date(now.getFullYear(), now.getMonth() - months, 1);
-    return start;
+
+    // Handle "alltime" explicitly before normalization
+    if (period === "alltime") {
+      return new Date(0); // Epoch start for all time
+    }
+
+    // Normalize period key (e.g., "1month" -> "1 month")
+    const normalizedPeriod = period.replace(/(month|months|year)/g, " $1");
+    const monthsMap = {
+      "1 month": 1,
+      "3 months": 3,
+      "6 months": 6,
+      "1 year": 12,
+    };
+    const months = monthsMap[normalizedPeriod];
+
+    if (months) {
+      return new Date(now.getFullYear(), now.getMonth() - months, 1);
+    }
+
+    // Fallback to 3 months if invalid
+    return new Date(now.getFullYear(), now.getMonth() - 3, 1);
   };
 
   const filterMeasurementsByPeriod = (measurements, period) => {
     if (!measurements.length) return [];
+    const now = new Date();
     const startDate = getPeriodStartDate(period);
     return measurements
-      .filter((meas) => new Date(meas.date) >= startDate)
+      .filter((meas) => {
+        const measDate = new Date(meas.date);
+        return measDate >= startDate && measDate <= now; // Added upper bound: <= current date
+      })
       .sort((a, b) => new Date(a.date) - new Date(b.date));
   };
 
@@ -215,8 +239,151 @@ const ProgressPage = () => {
     };
   };
 
+  // Helper function to get metric data for KPIs
+  const getMetricData = (metric) => {
+    const filtered = filterMeasurementsByPeriod(measurements, selectedPeriod);
+    if (filtered.length === 0) {
+      return {
+        currentValue: 0,
+        unit: metric === "bodyFat" ? "%" : "lbs",
+        trend: 0,
+      };
+    }
+    const first = filtered[0];
+    const last = filtered[filtered.length - 1];
+    const change = last[metric] - first[metric];
+    const percentChange =
+      first[metric] !== 0 ? (change / first[metric]) * 100 : 0;
+    const unit = metric === "bodyFat" ? "%" : "lbs";
+    return {
+      currentValue: last[metric] || 0,
+      unit,
+      trend: Math.round(percentChange * 10) / 10, // One decimal place
+    };
+  };
+
+  // Functional Export Data - Generate PDF Report
+  const handleExportData = () => {
+    if (!selectedMember) {
+      alert("Гишүүн сонгоно уу!"); // Mongolian alert
+      return;
+    }
+
+    const doc = new jsPDF();
+    const currentDate = new Date().toLocaleDateString("mn-MN"); // Mongolian date format
+    let yPos = 20;
+
+    // Title
+    doc.setFontSize(20);
+    doc.text(
+      `Ахицын тайлан: ${selectedMember.username || selectedMember.surname}`,
+      20,
+      yPos
+    );
+    yPos += 15;
+
+    doc.setFontSize(12);
+    doc.text(
+      `Гишүүн: ${selectedMember.username} ${selectedMember.surname}`,
+      20,
+      yPos
+    );
+    yPos += 10;
+    doc.text(
+      `Хугацаа: ${selectedPeriod.replace(/([A-Z])/g, " $1").trim()}`,
+      20,
+      yPos
+    );
+    yPos += 10;
+    doc.text(
+      `Үзүүлэлт: ${
+        selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1)
+      }`,
+      20,
+      yPos
+    );
+    yPos += 20;
+
+    // KPIs Table
+    doc.text("Гол үзүүлэлтүүд:", 20, yPos);
+    yPos += 10;
+    const tableData = [
+      ["Үзүүлэлт", "Утга", "Өөрчлөлт (%)"],
+      ...metrics.slice(0, 3).map((m) => {
+        const data = getMetricData(m.key);
+        return [
+          m.label,
+          `${data.currentValue} ${data.unit}`,
+          `${data.trend > 0 ? "+" : ""}${data.trend}%`,
+        ];
+      }),
+      [
+        "Зорилго биелэх",
+        `${getDoughnutChartData().datasets[0].data[0]}%`,
+        "+5%",
+      ], // Example for goals
+    ];
+    doc.autoTable({
+      startY: yPos,
+      head: [tableData[0]],
+      body: tableData.slice(1),
+      theme: "grid",
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [59, 130, 246] },
+    });
+    yPos = doc.lastAutoTable.finalY + 10;
+
+    // Measurements Summary
+    const filteredMeas = filterMeasurementsByPeriod(
+      measurements,
+      selectedPeriod
+    );
+    if (filteredMeas.length > 0) {
+      doc.text("Сүүлийн хэмжилтүүд:", 20, yPos);
+      yPos += 10;
+      const measTable = [
+        ["Огноо", "Жин (lbs)", "Өөх %", "Булчин (lbs)"],
+        ...filteredMeas
+          .slice(-5)
+          .reverse()
+          .map((m) => [
+            // Last 5 measurements
+            new Date(m.date).toLocaleDateString("mn-MN"),
+            m.weight || "-",
+            m.bodyFat || "-",
+            m.muscleMass || "-",
+          ]),
+      ];
+      doc.autoTable({
+        startY: yPos,
+        head: [measTable[0]],
+        body: measTable.slice(1),
+        theme: "grid",
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [34, 197, 94] },
+      });
+      yPos = doc.lastAutoTable.finalY + 10;
+    } else {
+      doc.text("Хэмжилт байхгүй—шинээр нэмнэ үү.", 20, yPos);
+      yPos += 10;
+    }
+
+    // Footer
+    doc.setFontSize(10);
+    doc.text(
+      `Тайлан гаргасан огноо: ${currentDate}`,
+      20,
+      doc.internal.pageSize.height - 20
+    );
+
+    // Save PDF
+    doc.save(
+      `ахицын-тайлан-${selectedMember.username || "гишүүн"}-${currentDate}.pdf` // Fixed filename typo
+    );
+  };
+
   // Measurements tab logic (unchanged)
-  const goodDirection = {
+  const goodDirectionPage = {
     weight: "<", // decrease good
     bodyFat: "<", // decrease good
     muscleMass: ">", // increase good
@@ -229,7 +396,7 @@ const ProgressPage = () => {
   const getColorClass = (metric, change) => {
     if (change === 0 || change === undefined || change === null)
       return "text-gray-500";
-    const dir = goodDirection[metric];
+    const dir = goodDirectionPage[metric];
     const isGood = (dir === "<" && change < 0) || (dir === ">" && change > 0);
     return isGood ? "text-green-600 font-medium" : "text-red-600 font-medium";
   };
@@ -317,7 +484,7 @@ const ProgressPage = () => {
   const handleSubmitMeasurement = async (payload) => {
     try {
       // Store's addMeasurement already refetches measurements and goals
-      await addMeasurement({ ...payload, member: selectedMember.memberId });
+      await addMeasurement({ ...payload, member: selectedMember._id }); // Fixed: use _id consistently
       // No need for extra getMeasurements/getGoals calls
     } catch (error) {
       console.error("Error adding measurement:", error);
@@ -334,11 +501,6 @@ const ProgressPage = () => {
       console.error("Error deleting measurement:", error);
       // Handle error (e.g., show toast)
     }
-  };
-
-  const handleExportData = () => {
-    // TODO: Implement export
-    console.log("Export measurements");
   };
 
   const handleViewPhotoGallery = () => {
@@ -364,7 +526,7 @@ const ProgressPage = () => {
     try {
       const payload = {
         ...goalData,
-        member: selectedMember._id, // Fixed to _id
+        member: selectedMember._id, // Fixed: use _id consistently
       };
       // Store's addGoal already refetches goals
       await addGoal(payload);
@@ -446,7 +608,7 @@ const ProgressPage = () => {
     }
   };
 
-  const getUnit = (goalType) => {
+  const getUnitPage = (goalType) => {
     if (goalType === "weight" || goalType === "muscleMass") {
       return "lbs";
     }
@@ -563,6 +725,8 @@ const ProgressPage = () => {
                   metrics={metrics}
                   getPeriodStartDate={getPeriodStartDate}
                   filterMeasurementsByPeriod={filterMeasurementsByPeriod}
+                  onExportData={handleExportData}
+                  onAddMeasurement={handleAddMeasurement}
                 />
               )}
               {activeTab === "measurements" && (
@@ -591,7 +755,7 @@ const ProgressPage = () => {
                   getGoalIcon={getGoalIcon}
                   getGoalColor={getGoalColor}
                   getPriorityColor={getPriorityColor}
-                  getUnit={getUnit}
+                  getUnit={getUnitPage}
                 />
               )}
             </div>
