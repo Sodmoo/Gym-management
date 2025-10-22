@@ -171,7 +171,7 @@ const SchedulesPage = () => {
     }
   }, [getSchedulesByTrainer, getTodaySchedules, trainerId]);
 
-  // Filtered Schedules (for lists, not calendar)
+  // Filtered Schedules (for lists and calendar)
   const filteredSchedules = useMemo(() => {
     return schedules.filter((schedule) => {
       const matchesSearch = (
@@ -192,8 +192,11 @@ const SchedulesPage = () => {
     });
   }, [schedules, searchQuery, filters]);
 
-  // All schedules for calendar (unfiltered for full view)
-  const allSchedulesForCalendar = useMemo(() => schedules, [schedules]);
+  // Filtered schedules for calendar
+  const allSchedulesForCalendar = useMemo(
+    () => filteredSchedules,
+    [filteredSchedules]
+  );
 
   // Derive members, plans, and workoutTemplates from populated schedules
   const members = useMemo(() => {
@@ -397,60 +400,16 @@ const SchedulesPage = () => {
 
       const newDate = targetDay.toISOString().split("T")[0];
 
-      // Calculate drop position for time
-      const rect = e.currentTarget.getBoundingClientRect();
-      const y = e.clientY - rect.top;
-      const relativeY = Math.max(0, y - HEADER_HEIGHT);
-      const hourOffset = relativeY / HOUR_HEIGHT;
-      let targetHour = START_HOUR + Math.floor(hourOffset);
-      targetHour = Math.max(START_HOUR, Math.min(END_HOUR, targetHour));
-      const minuteFraction = (relativeY % HOUR_HEIGHT) / HOUR_HEIGHT;
-      const targetMinute = Math.round(minuteFraction * 4) * 15; // Snap to 15 min intervals
-      const startTime = `${targetHour
-        .toString()
-        .padStart(2, "0")}:${targetMinute.toString().padStart(2, "0")}`;
-
-      // Preserve duration
-      const duration = getDurationMinutes(
-        draggedSchedule.startTime,
-        draggedSchedule.endTime
-      );
-      const durationHours = Math.floor(duration / 60);
-      const durationMins = duration % 60;
-      const endHour = (targetHour + durationHours) % 24;
-      const endMinute = targetMinute + durationMins;
-      let carryHour = 0;
-      let finalEndMinute = endMinute;
-      if (endMinute >= 60) {
-        carryHour = 1;
-        finalEndMinute -= 60;
-      }
-      const finalEndHour = (endHour + carryHour) % 24;
-      const endTime = `${finalEndHour
-        .toString()
-        .padStart(2, "0")}:${finalEndMinute.toString().padStart(2, "0")}`;
-
       const updatedData = {
         ...draggedSchedule,
         date: newDate,
-        startTime,
-        endTime,
       };
 
       await updateSchedule(draggedSchedule._id, updatedData);
       getSchedulesByTrainer(trainerId);
       setDraggedSchedule(null);
     },
-    [
-      draggedSchedule,
-      updateSchedule,
-      getSchedulesByTrainer,
-      trainerId,
-      HEADER_HEIGHT,
-      HOUR_HEIGHT,
-      START_HOUR,
-      END_HOUR,
-    ]
+    [draggedSchedule, updateSchedule, getSchedulesByTrainer, trainerId]
   );
 
   const handleDragOver = useCallback((e) => {
