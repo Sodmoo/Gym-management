@@ -70,8 +70,6 @@ export const useScheduleStore = create((set, get) => ({
   markScheduleComplete: async (id) => {
     set({ isLoading: true });
     try {
-      // FIXED: Use a dedicated endpoint if markScheduleComplete is routed separately; assuming /schedules/${id}/complete for PUT
-      // If it's the same as update, keep as is; adjust route as per your backend routes
       const res = await axiosInstance.put(`/schedules/${id}/complete`, {
         isCompleted: true,
       });

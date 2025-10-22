@@ -5,7 +5,7 @@ const scheduleSchema = new mongoose.Schema(
     planId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Plan",
-      required: true,
+      required: false,
     },
 
     trainerId: {

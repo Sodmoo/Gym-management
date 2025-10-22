@@ -714,20 +714,17 @@ export const createSchedule = async (req, res) => {
       note,
     } = req.body;
 
-    // Validation: Check required fields and ObjectIds
-    if (!trainerId || !memberId || !planId || !date) {
+    // Validation: Check required fields
+    if (!memberId || !date) {
       return res.status(400).json({
-        message: "Missing required fields: trainerId, memberId, planId, date",
+        message: "Missing required fields: memberId, date",
       });
     }
 
-    if (
-      !mongoose.Types.ObjectId.isValid(trainerId) ||
-      !mongoose.Types.ObjectId.isValid(memberId) ||
-      !mongoose.Types.ObjectId.isValid(planId)
-    ) {
+    // Validate ObjectIds based on type
+    if (!mongoose.Types.ObjectId.isValid(memberId)) {
       return res.status(400).json({
-        message: "Invalid ObjectId format for trainerId, memberId, or planId",
+        message: "Invalid ObjectId format for memberId",
       });
     }
 
@@ -745,13 +742,58 @@ export const createSchedule = async (req, res) => {
       });
     }
 
+    // Set default type if not provided
+    const scheduleType = type || "workout";
+
+    // Validate trainerId and planId for workout type
+    if (scheduleType === "workout") {
+      if (!trainerId || !planId || !workoutTemplateId) {
+        return res.status(400).json({
+          message:
+            "Missing required fields for workout: trainerId, planId, workoutTemplateId",
+        });
+      }
+      if (
+        !mongoose.Types.ObjectId.isValid(trainerId) ||
+        !mongoose.Types.ObjectId.isValid(planId) ||
+        !mongoose.Types.ObjectId.isValid(workoutTemplateId)
+      ) {
+        return res.status(400).json({
+          message:
+            "Invalid ObjectId format for trainerId, planId, or workoutTemplateId",
+        });
+      }
+    } else {
+      // For meeting or measurement, validate trainerId if provided
+      if (trainerId && !mongoose.Types.ObjectId.isValid(trainerId)) {
+        return res.status(400).json({
+          message: "Invalid ObjectId format for trainerId",
+        });
+      }
+      // For meeting or measurement, validate planId if provided
+      if (planId && !mongoose.Types.ObjectId.isValid(planId)) {
+        return res.status(400).json({
+          message: "Invalid ObjectId format for planId",
+        });
+      }
+      // For meeting or measurement, validate workoutTemplateId if provided
+      if (
+        workoutTemplateId &&
+        !mongoose.Types.ObjectId.isValid(workoutTemplateId)
+      ) {
+        return res.status(400).json({
+          message: "Invalid ObjectId format for workoutTemplateId",
+        });
+      }
+    }
+
     const schedule = new scheduleSchema({
-      trainerId,
+      trainerId: trainerId || undefined, // Optional for meeting/measurement
       memberId,
-      planId,
+      planId: planId || undefined, // Optional for meeting/measurement
       date: parsedDate,
-      type: type || "workout", // Default to "workout" per schema
-      workoutTemplateId: workoutTemplateId || undefined, // Optional
+      type: scheduleType,
+      workoutTemplateId: workoutTemplateId || undefined, // Required only for workout
       startTime: startTime || "09:00",
       endTime: endTime || "10:00",
       note: note || "",
@@ -761,7 +803,7 @@ export const createSchedule = async (req, res) => {
     // Populate for response
     await saved.populate([
       { path: "planId", select: "title goal" },
-      { path: "trainerId", select: "userId" }, // Basic trainer info
+      { path: "trainerId", select: "userId" },
       {
         path: "memberId",
         populate: { path: "userId", select: "surname username email" },
@@ -771,7 +813,7 @@ export const createSchedule = async (req, res) => {
 
     res.status(201).json(saved);
   } catch (error) {
-    console.error("Create schedule error:", error); // Log for debugging
+    console.error("Create schedule error:", error);
     res.status(500).json({
       message: "Failed to create schedule",
       error: error.message,
@@ -897,7 +939,6 @@ export const markScheduleComplete = async (req, res) => {
       });
     }
 
-    // Use scheduleSchema consistently (lowercase for variable)
     const schedule = await scheduleSchema
       .findByIdAndUpdate(
         id,

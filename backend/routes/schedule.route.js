@@ -19,6 +19,6 @@ router.get("/trainer/:trainerId/today", verifyToken, getTodaySchedules);
 router.delete("/:id", verifyToken, deleteSchedule);
 
 router.get("/", verifyToken, getAllSchedules);
-router.patch("/:id/complete", verifyToken, markScheduleComplete);
+router.put("/:id/complete", verifyToken, markScheduleComplete);
 
 export default router;
