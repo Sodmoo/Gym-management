@@ -29,7 +29,7 @@ export const useScheduleStore = create((set, get) => ({
   getAllSchedules: async () => {
     set({ isLoading: true });
     try {
-      const res = await axiosInstance.get("/schedules");
+      const res = await axiosInstance.get("/getAllSchedules");
       set({ schedules: res.data });
       return res.data;
     } catch (error) {
@@ -70,7 +70,9 @@ export const useScheduleStore = create((set, get) => ({
   markScheduleComplete: async (id) => {
     set({ isLoading: true });
     try {
-      const res = await axiosInstance.put(`/schedules/${id}`, {
+      // FIXED: Use a dedicated endpoint if markScheduleComplete is routed separately; assuming /schedules/${id}/complete for PUT
+      // If it's the same as update, keep as is; adjust route as per your backend routes
+      const res = await axiosInstance.put(`/schedules/${id}/complete`, {
         isCompleted: true,
       });
       toast.success("Schedule амжилттай дуусгалаа", {

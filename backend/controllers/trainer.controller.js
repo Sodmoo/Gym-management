@@ -699,26 +699,81 @@ export const getGoalsByMember = async (req, res) => {
   }
 };
 
-//Schedule controller
+// 🟢 CREATE Schedule
 export const createSchedule = async (req, res) => {
   try {
+    const {
+      trainerId,
+      memberId,
+      planId,
+      date,
+      type,
+      workoutTemplateId,
+      startTime,
+      endTime,
+      note,
+    } = req.body;
+
+    // Validation: Check required fields and ObjectIds
+    if (!trainerId || !memberId || !planId || !date) {
+      return res.status(400).json({
+        message: "Missing required fields: trainerId, memberId, planId, date",
+      });
+    }
+
+    if (
+      !mongoose.Types.ObjectId.isValid(trainerId) ||
+      !mongoose.Types.ObjectId.isValid(memberId) ||
+      !mongoose.Types.ObjectId.isValid(planId)
+    ) {
+      return res.status(400).json({
+        message: "Invalid ObjectId format for trainerId, memberId, or planId",
+      });
+    }
+
+    // Validate date
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime())) {
+      return res.status(400).json({ message: "Invalid date format" });
+    }
+
+    // Validate type against enum
+    const validTypes = ["workout", "measurement", "meeting"];
+    if (type && !validTypes.includes(type)) {
+      return res.status(400).json({
+        message: `Invalid type. Must be one of: ${validTypes.join(", ")}`,
+      });
+    }
+
     const schedule = new scheduleSchema({
-      trainerId: req.body.trainerId,
-      memberId: req.body.memberId,
-      planId: req.body.planId,
-      date: req.body.date,
-      type: req.body.type, // "measurement" эсвэл "meeting"
-      workoutTemplateId: req.body.workoutTemplateId || undefined,
-      startTime: req.body.startTime || "09:00",
-      endTime: req.body.endTime || "10:00",
-      note: req.body.note || "",
+      trainerId,
+      memberId,
+      planId,
+      date: parsedDate,
+      type: type || "workout", // Default to "workout" per schema
+      workoutTemplateId: workoutTemplateId || undefined, // Optional
+      startTime: startTime || "09:00",
+      endTime: endTime || "10:00",
+      note: note || "",
     });
 
     const saved = await schedule.save();
+    // Populate for response
+    await saved.populate([
+      { path: "planId", select: "title goal" },
+      { path: "trainerId", select: "userId" }, // Basic trainer info
+      {
+        path: "memberId",
+        populate: { path: "userId", select: "surname username email" },
+      },
+      { path: "workoutTemplateId", select: "title" },
+    ]);
+
     res.status(201).json(saved);
   } catch (error) {
+    console.error("Create schedule error:", error); // Log for debugging
     res.status(500).json({
-      message: "Failed to create custom schedule",
+      message: "Failed to create schedule",
       error: error.message,
     });
   }
@@ -729,39 +784,58 @@ export const getAllSchedules = async (req, res) => {
   try {
     const schedules = await scheduleSchema
       .find()
-      .populate("planId")
-      .populate("trainerId")
-      .populate("memberId")
-      .populate("workoutTemplateId")
-      .sort({ date: 1 }); // sort by date ascending
+      .populate([
+        { path: "planId", select: "title goal" },
+        {
+          path: "trainerId",
+          populate: { path: "userId", select: "username email" }, // Consistent population
+        },
+        {
+          path: "memberId",
+          populate: { path: "userId", select: "surname username email" },
+        },
+        { path: "workoutTemplateId", select: "title" },
+      ])
+      .sort({ date: 1 }); // Sort by date ascending
 
     res.status(200).json(schedules);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to get schedules", error: error.message });
+    console.error("Get all schedules error:", error);
+    res.status(500).json({
+      message: "Failed to get schedules",
+      error: error.message,
+    });
   }
 };
 
+// 🟡 GET Schedules by Trainer
 export const getSchedulesByTrainer = async (req, res) => {
   try {
-    const trainerId = req.params.id;
-    // Then populate
+    const { id: trainerId } = req.params; // Destructure for clarity
+
+    // Validate trainerId
+    if (!mongoose.Types.ObjectId.isValid(trainerId)) {
+      return res.status(400).json({
+        message: "Invalid trainerId: Must be a valid ObjectId",
+      });
+    }
+
     const schedules = await scheduleSchema
       .find({ trainerId })
-      .populate({
-        path: "memberId",
-        populate: {
-          path: "userId",
-          select: "surname username email",
+      .populate([
+        { path: "planId", select: "title goal" },
+        // No need to populate trainerId since we're querying by it
+        {
+          path: "memberId",
+          populate: { path: "userId", select: "surname username email" },
         },
-      })
-      .populate("planId", "title goal")
-      .populate("workoutTemplateId", "title")
+        { path: "workoutTemplateId", select: "title" },
+      ])
       .sort({ date: 1 });
 
     res.status(200).json(schedules);
   } catch (error) {
+    console.error("Get trainer schedules error:", error);
     res.status(500).json({
       message: "Failed to get trainer schedules",
       error: error.message,
@@ -769,27 +843,41 @@ export const getSchedulesByTrainer = async (req, res) => {
   }
 };
 
+// 🟡 GET Today's Schedules by Trainer
 export const getTodaySchedules = async (req, res) => {
   try {
-    const trainerId = req.params.trainerId;
+    const { trainerId } = req.params;
+
+    // Validate trainerId
+    if (!mongoose.Types.ObjectId.isValid(trainerId)) {
+      return res.status(400).json({
+        message: "Invalid trainerId: Must be a valid ObjectId",
+      });
+    }
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0); // Start of today (UTC; adjust for timezone if needed)
     const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
+    tomorrow.setDate(today.getDate() + 1); // Start of tomorrow
 
     const schedules = await scheduleSchema
       .find({
         trainerId,
         date: { $gte: today, $lt: tomorrow },
       })
-      .populate("memberId", "name email")
-      .populate("planId", "title")
-      .populate("workoutTemplateId", "title")
-      .sort({ startTime: 1 });
+      .populate([
+        {
+          path: "memberId",
+          populate: { path: "userId", select: "surname username email" }, // Consistent with others
+        },
+        { path: "planId", select: "title" },
+        { path: "workoutTemplateId", select: "title" },
+      ])
+      .sort({ startTime: 1 }); // Assuming startTime is HH:MM format; works lexicographically
 
     res.status(200).json(schedules);
   } catch (error) {
+    console.error("Get today's schedules error:", error);
     res.status(500).json({
       message: "Failed to get today's schedules",
       error: error.message,
@@ -797,51 +885,121 @@ export const getTodaySchedules = async (req, res) => {
   }
 };
 
+// 🟢 MARK Schedule Complete
 export const markScheduleComplete = async (req, res) => {
   try {
     const { id } = req.params;
-    const schedule = await Schedule.findByIdAndUpdate(
-      id,
-      { isCompleted: true },
-      { new: true }
-    );
+
+    // Validate ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "Invalid schedule ID: Must be a valid ObjectId",
+      });
+    }
+
+    // Use scheduleSchema consistently (lowercase for variable)
+    const schedule = await scheduleSchema
+      .findByIdAndUpdate(
+        id,
+        { isCompleted: true },
+        { new: true, runValidators: true }
+      )
+      .populate([
+        { path: "planId", select: "title" },
+        {
+          path: "memberId",
+          populate: { path: "userId", select: "username" },
+        },
+      ]);
+
+    if (!schedule) {
+      return res.status(404).json({ message: "Schedule not found" });
+    }
+
     res.status(200).json(schedule);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to update schedule", error: error.message });
+    console.error("Mark complete error:", error);
+    res.status(500).json({
+      message: "Failed to update schedule",
+      error: error.message,
+    });
   }
 };
+
 // 🔵 UPDATE Schedule
 export const updateSchedule = async (req, res) => {
   try {
-    const updated = await scheduleSchema.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
+    const { id } = req.params;
+
+    // Validate ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "Invalid schedule ID: Must be a valid ObjectId",
+      });
+    }
+
+    // Basic validation for required updates (e.g., if date is provided)
+    if (req.body.date) {
+      const parsedDate = new Date(req.body.date);
+      if (isNaN(parsedDate.getTime())) {
+        return res.status(400).json({ message: "Invalid date format" });
       }
-    );
-    if (!updated)
+      req.body.date = parsedDate;
+    }
+
+    const updated = await scheduleSchema
+      .findByIdAndUpdate(
+        id,
+        req.body,
+        { new: true, runValidators: true } // Enforce schema validation
+      )
+      .populate([
+        { path: "planId", select: "title goal" },
+        {
+          path: "memberId",
+          populate: { path: "userId", select: "surname username email" },
+        },
+        { path: "workoutTemplateId", select: "title" },
+      ]);
+
+    if (!updated) {
       return res.status(404).json({ message: "Schedule not found" });
+    }
+
     res.status(200).json(updated);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to update schedule", error: error.message });
+    console.error("Update schedule error:", error);
+    res.status(500).json({
+      message: "Failed to update schedule",
+      error: error.message,
+    });
   }
 };
 
 // 🔴 DELETE Schedule
 export const deleteSchedule = async (req, res) => {
   try {
-    const deleted = await scheduleSchema.findByIdAndDelete(req.params.id);
-    if (!deleted)
+    const { id } = req.params;
+
+    // Validate ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "Invalid schedule ID: Must be a valid ObjectId",
+      });
+    }
+
+    const deleted = await scheduleSchema.findByIdAndDelete(id);
+
+    if (!deleted) {
       return res.status(404).json({ message: "Schedule not found" });
+    }
+
     res.status(200).json({ message: "Schedule deleted successfully" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to delete schedule", error: error.message });
+    console.error("Delete schedule error:", error);
+    res.status(500).json({
+      message: "Failed to delete schedule",
+      error: error.message,
+    });
   }
 };
