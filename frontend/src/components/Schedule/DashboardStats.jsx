@@ -4,7 +4,7 @@ import { Calendar, Users, CheckCircle } from "lucide-react";
 
 const DashboardStats = ({ todayCount, totalCount, completedToday }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
       {[
         {
           label: "Өнөөдөр",
@@ -24,10 +24,10 @@ const DashboardStats = ({ todayCount, totalCount, completedToday }) => {
           color: "purple",
           icon: CheckCircle,
         },
-      ].map(({ label, value, color, icon: Icon }, i) => (
+      ].map(({ label, value, color, icon }, i) => (
         <div
           key={i}
-          className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300 h-35 hover:bg-cyan-200"
+          className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-white/20 hover:shadow-md transition-all duration-300 h-30 hover:bg-blue-200"
           role="figure"
           aria-label={`${label}: ${value}`}
         >
@@ -39,9 +39,12 @@ const DashboardStats = ({ todayCount, totalCount, completedToday }) => {
               <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
             </div>
             <div
-              className={`p-3 bg-gradient-to-r from-${color}-500 to-${color}-600 rounded-xl text-white shadow-lg mt-2`}
+              className={`p-3 bg-${color}-500  rounded-xl text-white shadow-lg mt-2`}
             >
-              <Icon className="w-10 h-10" aria-hidden="true" />
+              {React.createElement(icon, {
+                className: "w-9 h-9",
+                "aria-hidden": "true",
+              })}
             </div>
           </div>
         </div>

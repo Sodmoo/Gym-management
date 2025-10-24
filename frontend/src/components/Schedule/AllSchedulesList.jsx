@@ -10,7 +10,21 @@ const AllSchedulesList = ({
   getEventIcon,
   onScheduleClick,
   onCreateSchedule,
+  getMemberDisplayName, // added helper prop
 }) => {
+  const resolveMemberName = (schedule) =>
+    schedule?.memberName ||
+    (typeof getMemberDisplayName === "function"
+      ? getMemberDisplayName(schedule?.memberId)
+      : null) ||
+    // fallback: try common fields without showing email
+    schedule?.memberId?.username ||
+    schedule?.memberId?.name ||
+    (typeof schedule?.memberId === "string"
+      ? schedule.memberId.slice(0, 6)
+      : null) ||
+    "N/A";
+
   return (
     <div className="bg-white/80 backdrop-blur-sm rounded-md shadow-lg border border-white/20 p-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-5 flex items-center space-x-2">
@@ -23,7 +37,7 @@ const AllSchedulesList = ({
             <Calendar className="w-8 h-8 text-gray-400" aria-hidden="true" />
           </div>
           <p className="text-lg font-medium">
-            No schedules match your filters.
+            Таны шүүлтүүртэй тохирох хуваарь алга.
           </p>
           <button
             onClick={onCreateSchedule}
@@ -31,7 +45,7 @@ const AllSchedulesList = ({
             aria-label="Create first schedule"
           >
             <Plus className="w-4 h-4" aria-hidden="true" />
-            <span>Create your first schedule</span>
+            <span>Анхны хуваариа үүсгэх</span>
           </button>
         </div>
       ) : (
@@ -42,16 +56,17 @@ const AllSchedulesList = ({
           {filteredSchedules.map((schedule, i) => {
             const { startTime, endTime } = getDefaultTimes(schedule);
             const EventIcon = getEventIcon(schedule.type);
+            const memberLabel = resolveMemberName(schedule);
             return (
               <div
                 key={schedule._id}
-                className="group flex items-center justify-between p-3 bg-gradient-to-r from-white to-slate-50 rounded-md border-2 border-blue-600 hover:shadow-md transition-all duration-300 cursor-pointer transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="group flex items-center justify-between p-3 bg-gradient-to-r from-white to-slate-50 rounded-md border-1 border-blue-600 hover:shadow-md transition-all duration-300 cursor-pointer transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 onClick={() => onScheduleClick(schedule)}
                 role="button"
                 tabIndex={0}
-                aria-label={`View details for ${
-                  schedule.memberId?.userId?.username || "Client"
-                }'s ${schedule.type} on ${formatDate(schedule.date, "MMM do")}`}
+                aria-label={`View details for ${memberLabel}'s ${
+                  schedule.type
+                } on ${formatDate(schedule.date, "MMM do")}`}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ")
                     onScheduleClick(schedule);
@@ -70,9 +85,7 @@ const AllSchedulesList = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-gray-900 truncate">
-                      {schedule.memberId?.userId?.username ||
-                        schedule.memberId?.name ||
-                        "N/A"}
+                      {memberLabel}
                     </div>
                     <div className="text-sm text-gray-600 truncate flex items-center space-x-3 mt-0.5">
                       <span>{formatDate(schedule.date, "MMM do")}</span>
@@ -94,7 +107,7 @@ const AllSchedulesList = ({
                       : "bg-amber-100 text-amber-800"
                   }`}
                 >
-                  {schedule.isCompleted ? "Completed" : "Pending"}
+                  {schedule.isCompleted ? "Дууссан" : "Хүлээгдэж буй"}
                 </span>
               </div>
             );

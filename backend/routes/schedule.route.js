@@ -4,6 +4,7 @@ import {
   createSchedule,
   deleteSchedule,
   getAllSchedules,
+  getScheduleById,
   getSchedulesByTrainer,
   getTodaySchedules,
   markScheduleComplete,
@@ -17,6 +18,7 @@ router.get("/:id", verifyToken, getSchedulesByTrainer);
 router.put("/:id", verifyToken, updateSchedule);
 router.get("/trainer/:trainerId/today", verifyToken, getTodaySchedules);
 router.delete("/:id", verifyToken, deleteSchedule);
+router.get("/getScheduleById/:id", verifyToken, getScheduleById);
 
 router.get("/", verifyToken, getAllSchedules);
 router.put("/:id/complete", verifyToken, markScheduleComplete);

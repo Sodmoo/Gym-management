@@ -29,7 +29,7 @@ export const useScheduleStore = create((set, get) => ({
   getAllSchedules: async () => {
     set({ isLoading: true });
     try {
-      const res = await axiosInstance.get("/getAllSchedules");
+      const res = await axiosInstance.get("/schedules/");
       set({ schedules: res.data });
       return res.data;
     } catch (error) {

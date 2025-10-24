@@ -9,6 +9,7 @@ import measurementSchema from "../models/Measurement.model.js";
 import goalSchema from "../models/Goals.model.js";
 import PlanModel from "../models/Plan.model.js";
 import scheduleSchema from "../models/Schedule.model.js";
+import { path } from "framer-motion/client";
 
 export const trainers = async (req, res) => {
   try {
@@ -700,6 +701,16 @@ export const getGoalsByMember = async (req, res) => {
 };
 
 // 🟢 CREATE Schedule
+const weekDayMap = {
+  Sunday: 0,
+  Monday: 1,
+  Tuesday: 2,
+  Wednesday: 3,
+  Thursday: 4,
+  Friday: 5,
+  Saturday: 6,
+};
+
 export const createSchedule = async (req, res) => {
   try {
     const {
@@ -794,22 +805,46 @@ export const createSchedule = async (req, res) => {
       date: parsedDate,
       type: scheduleType,
       workoutTemplateId: workoutTemplateId || undefined, // Required only for workout
-      startTime: startTime || "09:00",
-      endTime: endTime || "10:00",
+      startTime: startTime || "08:00",
+      endTime: endTime || "09:00",
       note: note || "",
     });
 
     const saved = await schedule.save();
     // Populate for response
     await saved.populate([
-      { path: "planId", select: "title goal" },
+      { path: "planId", select: "title goal " },
       { path: "trainerId", select: "userId" },
       {
         path: "memberId",
         populate: { path: "userId", select: "surname username email" },
       },
-      { path: "workoutTemplateId", select: "title" },
+      {
+        path: "workoutTemplateId",
+        select: "title program", // Include 'program' to access programDay and exercises
+      },
     ]);
+
+    // Manually attach the relevant programDay exercises based on schedule.date
+    // For single document
+    if (saved.workoutTemplateId && saved.date && saved.type === "workout") {
+      const dayOfWeek = new Date(saved.date).getDay();
+      const dayName = Object.keys(weekDayMap).find(
+        (key) => weekDayMap[key] === dayOfWeek
+      );
+      const programDay = saved.workoutTemplateId.program?.find(
+        (d) => d.dayName === dayName
+      );
+      if (programDay && !programDay.isRestDay) {
+        // Attach the full programDay (includes exercises array)
+        saved.programDay = programDay;
+        // Or just exercises: saved.exercises = programDay.exercises;
+      } else {
+        saved.programDay = null; // Handle rest day or no match
+      }
+    } else {
+      saved.programDay = null; // Non-workout or no template
+    }
 
     res.status(201).json(saved);
   } catch (error) {
@@ -862,6 +897,7 @@ export const getSchedulesByTrainer = async (req, res) => {
       });
     }
 
+    // Fetch schedules with full populate
     const schedules = await scheduleSchema
       .find({ trainerId })
       .populate([
@@ -871,9 +907,38 @@ export const getSchedulesByTrainer = async (req, res) => {
           path: "memberId",
           populate: { path: "userId", select: "surname username email" },
         },
-        { path: "workoutTemplateId", select: "title" },
+        {
+          path: "workoutTemplateId",
+          select: "title program", // Include 'program' for programDay and exercises
+        },
       ])
-      .sort({ date: 1 });
+      .sort({ date: 1, startTime: 1 }); // Sort by date then startTime for better ordering
+
+    // Manually attach the relevant programDay exercises based on schedule.date
+    schedules.forEach((schedule) => {
+      if (
+        schedule.workoutTemplateId &&
+        schedule.date &&
+        schedule.type === "workout"
+      ) {
+        const dayOfWeek = new Date(schedule.date).getDay();
+        const dayName = Object.keys(weekDayMap).find(
+          (key) => weekDayMap[key] === dayOfWeek
+        );
+        const programDay = schedule.workoutTemplateId.program?.find(
+          (d) => d.dayName === dayName
+        );
+        if (programDay && !programDay.isRestDay) {
+          // Attach the full programDay (includes notes and exercises array)
+          schedule.programDay = programDay;
+          // Or just exercises if preferred: schedule.exercises = programDay.exercises;
+        } else {
+          schedule.programDay = null; // Handle rest day or no match
+        }
+      } else {
+        schedule.programDay = null; // Non-workout or no template
+      }
+    });
 
     res.status(200).json(schedules);
   } catch (error) {
@@ -1042,5 +1107,43 @@ export const deleteSchedule = async (req, res) => {
       message: "Failed to delete schedule",
       error: error.message,
     });
+  }
+};
+
+export const getScheduleById = async (req, res) => {
+  const id = req.params.id;
+  try {
+    // First, fetch without population to see the raw memberId
+    const scheduleWithoutPop = await scheduleSchema.findById(id);
+    console.log(
+      "Raw schedule (no pop):",
+      JSON.stringify(scheduleWithoutPop, null, 2)
+    );
+
+    // Now with population
+    const schedules = await scheduleSchema
+      .findById(id)
+      .populate([
+        { path: "planId" },
+        { path: "trainerId" },
+        {
+          path: "memberId",
+          populate: { path: "userId", select: "surname username email" },
+        },
+      ]);
+
+    console.log("Populated schedule:", JSON.stringify(schedules, null, 2)); // Check if member is null here
+
+    // If memberId is valid but pop fails, manually test the query
+    if (scheduleWithoutPop && scheduleWithoutPop.memberId) {
+      const Member = mongoose.model("Member"); // Replace with your actual model name
+      const testMember = await Member.findById(scheduleWithoutPop.memberId);
+      console.log("Manual member fetch:", testMember ? "Found" : "Not found");
+    }
+
+    res.status(200).json(schedules);
+  } catch (error) {
+    console.error("Error fetching schedule:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };

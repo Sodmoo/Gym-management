@@ -10,6 +10,7 @@ const TodaysAgenda = ({
   getEventIcon,
   onScheduleClick,
   onCreateSchedule,
+  getMemberDisplayName, // <-- new prop
 }) => {
   return (
     <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 p-6 mb-8">
@@ -40,12 +41,14 @@ const TodaysAgenda = ({
             return (
               <div
                 key={sch._id}
-                className="group flex items-center justify-between p-2 bg-white rounded-md border-3 border-cyan-100 hover:shadow-md transition-all duration-300 cursor-pointer transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="group flex items-center justify-between p-2 bg-white rounded-md border-1 border-blue-600 hover:shadow-md transition-all duration-300 cursor-pointer transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 onClick={() => onScheduleClick(sch)}
                 role="button"
                 tabIndex={0}
                 aria-label={`View details for ${
-                  sch.memberId?.userId?.username || "Client"
+                  sch.memberName ||
+                  getMemberDisplayName?.(sch.memberId) ||
+                  "Client"
                 }'s ${sch.type} at ${startTime}`}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") onScheduleClick(sch);
@@ -64,8 +67,8 @@ const TodaysAgenda = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-gray-900 truncate text-base">
-                      {sch.memberId?.userId?.username ||
-                        sch.memberId?.name ||
+                      {sch.memberName ||
+                        getMemberDisplayName?.(sch.memberId) ||
                         "N/A"}
                     </div>
                     <div className="text-sm text-gray-600 truncate flex items-center space-x-4 mt-0.5">
@@ -82,13 +85,13 @@ const TodaysAgenda = ({
                   </div>
                 </div>
                 <span
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold ml-4 transition-colors duration-200 ${
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold ml-4 transition-colors duration-200 ${
                     sch.isCompleted
                       ? "bg-emerald-100 text-emerald-800"
                       : "bg-amber-100 text-amber-800"
                   }`}
                 >
-                  {sch.isCompleted ? "Completed" : "Pending"}
+                  {sch.isCompleted ? "Дууссан" : "Хүлээгдэж буй"}
                 </span>
               </div>
             );

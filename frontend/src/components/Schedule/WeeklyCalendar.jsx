@@ -11,7 +11,6 @@ const WeeklyCalendar = ({
   onNavigateWeek,
   isMobile,
   START_HOUR,
-  END_HOUR,
   HOUR_HEIGHT,
   TOTAL_HOURS,
   TOTAL_HEIGHT,
@@ -27,6 +26,41 @@ const WeeklyCalendar = ({
   handleDragStart,
   onScheduleClick,
 }) => {
+  // Resolve member display name from various possible shapes returned by backend
+  const getMemberName = (schedule) => {
+    if (!schedule) return "Гишүүн";
+    console.log(schedule);
+
+    // Prefer precomputed memberName (SchedulesPage creates this)
+    if (schedule.memberName && typeof schedule.memberName === "string") {
+      return schedule.memberName;
+    }
+
+    const m = schedule.member || schedule.memberId || schedule.client || null;
+    if (!m) return "Гишүүн";
+
+    // If member is a populated user object or contains a userId ref/object
+    const userObj = m.userId || m.user || null;
+    const candidates = [
+      userObj?.username,
+      userObj?.name,
+      m.username,
+      m.name,
+      m.fullName,
+      m.displayName,
+      // some APIs may return nested user name fields
+      userObj?.profile?.username,
+      userObj?.profile?.name,
+    ];
+    for (const c of candidates) {
+      if (typeof c === "string" && c.trim()) return c.trim();
+    }
+
+    // final fallbacks: if m is an id string return a short id, otherwise generic label
+    if (typeof m === "string") return m.slice(0, 6);
+    return "Гишүүн";
+  };
+
   return (
     <div className="bg-cyan-300 backdrop-blur-sm rounded-xl shadow-md border border-blue-500 overflow-hidden mb-5">
       <div className="px-4 py-3 border-b border-gray-100  ">
@@ -39,14 +73,14 @@ const WeeklyCalendar = ({
             <button
               onClick={() => onNavigateWeek("prev")}
               className="p-3 rounded hover:bg-blue-200 transition-colors duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-400"
-              aria-label="Previous week"
+              aria-label="Өмнөх долоо хоног"
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" aria-hidden="true" />
             </button>
             <button
               onClick={() => onNavigateWeek("next")}
               className="p-3 rounded hover:bg-blue-200 transition-colors duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-400"
-              aria-label="Next week"
+              aria-label="Дараагийн долоо хоног"
             >
               <ArrowRight
                 className="w-5 h-5 text-gray-600"
@@ -129,7 +163,7 @@ const WeeklyCalendar = ({
                         </div>
                         {isToday(day) && (
                           <div className="text-[10px] text-blue-500 font-medium mt-0.5">
-                            Today
+                            Өнөөдөр
                           </div>
                         )}
                       </div>
@@ -150,6 +184,9 @@ const WeeklyCalendar = ({
                         const topPx = calculateTop(startTime);
                         const heightPx = calculateHeight(startTime, endTime);
                         const EventIcon = getEventIcon(schedule.type);
+                        const eventColorBase = getEventColor(
+                          schedule.type
+                        ).replace("bg-", "");
                         return (
                           <div
                             key={schedule._id}
@@ -159,47 +196,63 @@ const WeeklyCalendar = ({
                               e.stopPropagation();
                               onScheduleClick(schedule);
                             }}
-                            className={`absolute left-1.5 right-1.5 cursor-pointer transition-all duration-300 hover:shadow-md hover:scale-[1.005] rounded-lg p-2 flex flex-col justify-between text-white text-[10px] z-10 ${getEventColor(
-                              schedule.type
-                            )} shadow-sm border-white/20`}
+                            className={`
+        absolute left-1 right-1 cursor-pointer 
+        transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-0.5 
+        rounded-md p-2 flex flex-row  space-y-0.5 text-white text-xs z-10 
+        bg-gradient-to-br from-${eventColorBase}-500 via-${eventColorBase}-600 to-${eventColorBase}-700
+        shadow-sm border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/50
+        ${schedule.isCompleted ? "opacity-60" : ""}
+      `}
                             style={{
                               top: `${topPx}px`,
                               height: `${heightPx}px`,
-                              minHeight: "40px",
+                              minHeight: "50px",
                             }}
                             role="button"
                             tabIndex={0}
-                            aria-label={`Schedule for ${
-                              schedule.memberId?.userId?.username || "Client"
-                            } on ${formatDate(
+                            aria-label={`Хуваарь: ${getMemberName(schedule)} (${
+                              schedule.type
+                            }) ${formatDate(
                               schedule.date,
                               "PPP"
-                            )} at ${startTime}`}
+                            )} өдөр ${startTime} - ${endTime} хүртэл${
+                              schedule.isCompleted ? " (Дууссан)" : ""
+                            }`}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ")
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
                                 onScheduleClick(schedule);
+                              }
                             }}
                           >
-                            <div className="flex items-center space-x-1 mb-0.5">
+                            {/* Header: Icon + Name – tightened for 50px height */}
+                            <div className="flex items-center space-x-1.5 flex-shrink-0">
                               <EventIcon
-                                className="w-3 h-3 flex-shrink-0 opacity-100"
+                                className="w-6 h-6 flex-shrink-0 opacity-90"
                                 aria-hidden="true"
                               />
-                              <div className="font-medium truncate flex-1 text-[9px] leading-tight">
-                                {schedule.memberId?.userId?.username ||
-                                  schedule.memberId?.name ||
-                                  "Client"}
+                              <div className="pl-1">
+                                <div className="font-semibold truncate flex-1 leading-tight text-[12px]">
+                                  {getMemberName(schedule)}
+                                </div>
+                                {/* Time – compact for space */}
+                                <div className="font-normal opacity-90 truncate leading-tight text-[10px] flex-shrink-0">
+                                  {startTime} – {endTime}
+                                </div>
                               </div>
                             </div>
-                            <div className="text-[9px] opacity-95 truncate leading-tight">
-                              {startTime} - {endTime}
-                            </div>
+
+                            {/* Full Completed Overlay – scaled for 50px */}
                             {schedule.isCompleted && (
-                              <div className="absolute inset-0 bg-green-400/20 rounded-lg flex items-center justify-center z-0">
+                              <div className="absolute inset-0 bg-green-400 backdrop-blur-sm rounded-md flex flex-row gap-2 items-center justify-center z-20 ">
                                 <CheckCircle
-                                  className="w-3 h-3 text-green-100"
+                                  className="w-7 h-7 text-green-100 "
                                   aria-hidden="true"
                                 />
+                                <div className="text-white text-[12px] font-bold tracking-wide uppercase">
+                                  Дууссан
+                                </div>
                               </div>
                             )}
                           </div>
@@ -222,7 +275,10 @@ const WeeklyCalendar = ({
               >
                 <h3
                   className="font-bold text-gray-900 mb-1.5 flex items-center space-x-1.5"
-                  aria-label={`Schedules for ${formatDate(day, "EEE, MMM do")}`}
+                  aria-label={`Долоо хоногийн хуваариуд ${formatDate(
+                    day,
+                    "EEE, MMM do"
+                  )}`}
                 >
                   <Calendar
                     className="w-3.5 h-3.5 text-blue-600"
@@ -231,7 +287,7 @@ const WeeklyCalendar = ({
                   <span>{formatDate(day, "EEE, MMM do")}</span>
                   {isToday(day) && (
                     <span className="text-blue-500 text-xs font-medium">
-                      Today
+                      Өнөөдөр
                     </span>
                   )}
                 </h3>
@@ -246,9 +302,11 @@ const WeeklyCalendar = ({
                         ).replace("border-", "border-")} hover:shadow-sm`}
                         role="button"
                         tabIndex={0}
-                        aria-label={`Schedule for ${
-                          schedule.memberId?.userId?.username || "Client"
-                        } at ${getDefaultTimes(schedule).startTime}`}
+                        aria-label={`Гишүүн ${getMemberName(
+                          schedule
+                        )} -ийн хуваарь ${
+                          getDefaultTimes(schedule).startTime
+                        } цагт`}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ")
                             onScheduleClick(schedule);
@@ -271,9 +329,7 @@ const WeeklyCalendar = ({
                             </div>
                             <div>
                               <div className="font-medium text-gray-900 text-xs">
-                                {schedule.memberId?.userId?.username ||
-                                  schedule.memberId?.name ||
-                                  "Client"}
+                                {getMemberName(schedule)}
                               </div>
                               <div className="text-[10px] text-gray-600">
                                 {getDefaultTimes(schedule).startTime} -{" "}
@@ -288,7 +344,7 @@ const WeeklyCalendar = ({
                                 : "bg-yellow-100 text-yellow-800"
                             }`}
                           >
-                            {schedule.isCompleted ? "Completed" : "Pending"}
+                            {schedule.isCompleted ? "Дууссан" : "Хүлээгдэж буй"}
                           </span>
                         </div>
                       </div>

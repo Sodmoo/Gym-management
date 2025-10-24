@@ -55,9 +55,9 @@ const SearchAndFilters = ({
               aria-label="Filter by type"
             >
               <option value="all">Төрлүүд</option>
-              <option value="workout">Workouts</option>
-              <option value="meeting">Meetings</option>
-              <option value="measurement">Measurements</option>
+              <option value="workout">Дасгалууд</option>
+              <option value="meeting">Уулзалт</option>
+              <option value="measurement">Хэмжилт</option>
             </select>
           </div>
 
@@ -76,8 +76,8 @@ const SearchAndFilters = ({
               aria-label="Filter by status"
             >
               <option value="all">Бүх статус</option>
-              <option value="pending">Pending</option>
-              <option value="completed">Completed</option>
+              <option value="pending">Хүлээгбэж буй</option>
+              <option value="completed">Дууссан</option>
             </select>
           </div>
 

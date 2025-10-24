@@ -17,6 +17,7 @@ const weekDayMap = {
 };
 
 // ---------------- CREATE PLAN ----------------
+
 export const createPlan = async (req, res) => {
   try {
     const {
@@ -51,17 +52,31 @@ export const createPlan = async (req, res) => {
     }
 
     const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0); // Set to start of day in local timezone
     const end = new Date(endDate);
-    start.setUTCHours(MONGOLIA_UTC_OFFSET, 0, 0, 0);
-    end.setUTCHours(MONGOLIA_UTC_OFFSET, 0, 0, 0);
+    end.setHours(0, 0, 0, 0); // Set to start of day in local timezone
 
     const msPerDay = 24 * 60 * 60 * 1000;
     const totalDays = Math.ceil((end - start) / msPerDay) + 1;
+
+    const workoutDurationMinutes = 60;
+    const bufferMinutes = 30; // 30-minute break after each workout
+    const bufferMs = bufferMinutes * 60 * 1000;
+
+    const possibleStarts = [];
+    for (let h = 9; h <= 20; h++) {
+      possibleStarts.push({ hour: h, min: 0 });
+      if (h < 20) {
+        possibleStarts.push({ hour: h, min: 30 });
+      }
+    }
 
     const schedulesToInsert = [];
 
     for (let i = 0; i < totalDays; i++) {
       const currentDate = new Date(start.getTime() + i * msPerDay);
+      currentDate.setHours(0, 0, 0, 0); // Ensure start of day
+
       const dayOfWeek = currentDate.getDay();
 
       const dayProgram = template.program.find(
@@ -71,6 +86,75 @@ export const createPlan = async (req, res) => {
       if (!dayProgram) continue;
       if (dayProgram.isRestDay) continue;
 
+      // Fetch existing workout schedules for this trainer on this date (any member)
+      const existingSchedules = await Schedule.find({
+        trainerId,
+        date: currentDate,
+        type: "workout",
+      });
+
+      // Find the first available non-overlapping slot with buffer
+      let startTimeStr = null;
+      let endTimeStr = null;
+      let slotFound = false;
+
+      for (let slot of possibleStarts) {
+        const { hour, min } = slot;
+        const candidateStart = new Date(currentDate.getTime());
+        candidateStart.setHours(hour, min, 0, 0); // Set local hour and minute
+        const candidateEnd = new Date(
+          candidateStart.getTime() + workoutDurationMinutes * 60 * 1000
+        );
+
+        let overlaps = false;
+        for (let ex of existingSchedules) {
+          if (ex.startTime && ex.endTime) {
+            let exStart, exEnd;
+            if (typeof ex.startTime === "string") {
+              // Parse string "HH:MM" to Date on currentDate
+              const [h, m] = ex.startTime.split(":").map(Number);
+              exStart = new Date(currentDate.getTime());
+              exStart.setHours(h, m || 0, 0, 0);
+
+              const [eh, em] = ex.endTime.split(":").map(Number);
+              exEnd = new Date(currentDate.getTime());
+              exEnd.setHours(eh, em || 0, 0, 0);
+            } else {
+              // Assume Date object
+              exStart = new Date(ex.startTime);
+              exEnd = new Date(ex.endTime);
+            }
+
+            if (isNaN(exStart.getTime()) || isNaN(exEnd.getTime())) {
+              continue; // Skip invalid dates
+            }
+
+            const extendedEnd = new Date(exEnd.getTime() + bufferMs);
+            // Overlap if candidate starts before extended end of existing AND ends after start of existing
+            if (candidateStart < extendedEnd && candidateEnd > exStart) {
+              overlaps = true;
+              break;
+            }
+          }
+        }
+
+        if (!overlaps) {
+          // Calculate end time
+          const endMinutes = min + workoutDurationMinutes;
+          const endHour = hour + Math.floor(endMinutes / 60);
+          const endMin = endMinutes % 60;
+          startTimeStr = `${hour.toString().padStart(2, "0")}:${min
+            .toString()
+            .padStart(2, "0")}`;
+          endTimeStr = `${endHour.toString().padStart(2, "0")}:${endMin
+            .toString()
+            .padStart(2, "0")}`;
+          slotFound = true;
+          break;
+        }
+      }
+
+      // If no slot found all day, create with null times (or skip: if (!slotFound) continue;)
       schedulesToInsert.push({
         planId: plan._id,
         trainerId,
@@ -78,8 +162,8 @@ export const createPlan = async (req, res) => {
         date: currentDate,
         type: "workout",
         workoutTemplateId: template._id,
-        startTime: null,
-        endTime: null,
+        startTime: startTimeStr, // string "HH:MM" or null
+        endTime: endTimeStr, // string "HH:MM" or null
         isCompleted: false,
         note: dayProgram.notes || "",
       });
@@ -114,6 +198,7 @@ export const editPlan = async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
 
+    // Fetch the existing plan
     const plan = await PlanSchema.findById(id).session(session);
     if (!plan) {
       await session.abortTransaction();
@@ -121,73 +206,113 @@ export const editPlan = async (req, res) => {
       return res.status(404).json({ message: "Тухайн Plan олдсонгүй" });
     }
 
+    // Detect changes
     const templateChanged =
       updates.workoutTemplate &&
       updates.workoutTemplate.toString() !== plan.workoutTemplate?.toString();
 
+    const dateChanged =
+      updates.startDate !== plan.startDate.toISOString().split("T")[0] ||
+      updates.endDate !== plan.endDate.toISOString().split("T")[0];
+
+    // Update plan fields
     Object.assign(plan, updates);
     await plan.save({ session });
 
-    if (templateChanged) {
-      const now = new Date();
-      await Schedule.deleteMany({
-        planId: plan._id,
-        date: { $gte: now },
-      }).session(session);
+    // Handle schedule updates
+    if (templateChanged || dateChanged) {
+      const template = await workoutTemplateSchema
+        .findById(plan.workoutTemplate)
+        .session(session);
 
-      const template = await workoutTemplateSchema.findById(
-        updates.workoutTemplate
-      );
-      if (!template) throw new Error("Workout Template олдсонгүй");
-
-      const start = new Date(plan.startDate);
-      const end = new Date(plan.endDate);
-      start.setUTCHours(MONGOLIA_UTC_OFFSET, 0, 0, 0);
-      end.setUTCHours(MONGOLIA_UTC_OFFSET, 0, 0, 0);
-
-      const msPerDay = 24 * 60 * 60 * 1000;
-      const totalDays = Math.ceil((end - start) / msPerDay) + 1;
-
-      const schedulesToInsert = [];
-      for (let i = 0; i < totalDays; i++) {
-        const currentDate = new Date(start.getTime() + i * msPerDay);
-        const dayOfWeek = currentDate.getDay();
-
-        const dayProgram = template.program.find(
-          (d) => weekDayMap[d.dayName] === dayOfWeek
-        );
-        if (!dayProgram || dayProgram.isRestDay) continue;
-
-        schedulesToInsert.push({
-          planId: plan._id,
-          trainerId: plan.trainerId,
-          memberId: plan.memberId,
-          date: currentDate,
-          type: "workout",
-          workoutTemplateId: template._id,
-          startTime: null,
-          endTime: null,
-          isCompleted: false,
-          note: dayProgram.notes || "",
+      if (!template || !template.program?.length) {
+        await session.commitTransaction();
+        session.endSession();
+        return res.status(200).json({
+          message:
+            "Plan шинэчлэгдсэн боловч Workout Template хоосон эсвэл олдсонгүй.",
+          plan,
         });
       }
 
-      if (schedulesToInsert.length > 0) {
-        await Schedule.insertMany(schedulesToInsert, { session });
+      if (dateChanged) {
+        // --- FULL REGENERATION (Dates changed) ---
+        await Schedule.deleteMany({ planId: plan._id }).session(session);
+
+        const start = new Date(plan.startDate);
+        const end = new Date(plan.endDate);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+
+        const msPerDay = 24 * 60 * 60 * 1000;
+        const totalDays = Math.ceil((end - start) / msPerDay) + 1;
+
+        const schedulesToInsert = [];
+
+        for (let i = 0; i < totalDays; i++) {
+          const currentDate = new Date(start.getTime() + i * msPerDay);
+          currentDate.setHours(0, 0, 0, 0);
+          const dayOfWeek = currentDate.getDay();
+
+          const dayProgram = template.program.find(
+            (d) => weekDayMap[d.dayName] === dayOfWeek
+          );
+
+          if (!dayProgram || dayProgram.isRestDay) continue;
+
+          schedulesToInsert.push({
+            planId: plan._id,
+            trainerId: plan.trainerId,
+            memberId: plan.memberId,
+            date: currentDate,
+            type: "workout",
+            workoutTemplateId: template._id,
+            startTime: "09:00", // default start time
+            endTime: "10:00", // default end time
+            isCompleted: false,
+            note: dayProgram.notes || "",
+          });
+        }
+
+        if (schedulesToInsert.length > 0)
+          await Schedule.insertMany(schedulesToInsert, { session });
+      } else if (templateChanged) {
+        // --- UPDATE TEMPLATE ONLY (Keep schedule times) ---
+        const existingSchedules = await Schedule.find({
+          planId: plan._id,
+          type: "workout",
+        }).session(session);
+
+        for (let sch of existingSchedules) {
+          const dayOfWeek = sch.date.getDay();
+          const dayProgram = template.program.find(
+            (d) => weekDayMap[d.dayName] === dayOfWeek
+          );
+
+          if (!dayProgram || dayProgram.isRestDay) continue;
+
+          sch.workoutTemplateId = template._id;
+          sch.note = dayProgram.notes || sch.note;
+          await sch.save({ session });
+        }
       }
     }
 
     await session.commitTransaction();
     session.endSession();
 
-    res.status(200).json({ message: "Plan амжилттай шинэчлэгдлээ", plan });
+    res.status(200).json({
+      message: "Plan болон Schedule-ууд амжилттай шинэчлэгдлээ.",
+      plan,
+    });
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
     console.error("editPlan error:", error);
-    res
-      .status(500)
-      .json({ message: "Plan шинэчлэхэд алдаа гарлаа", error: error.message });
+    res.status(500).json({
+      message: "Plan шинэчлэхэд алдаа гарлаа.",
+      error: error.message,
+    });
   }
 };
 
@@ -198,13 +323,14 @@ export const deletePlan = async (req, res) => {
 
   try {
     const { id } = req.params;
-    const plan = await PlanSchema.findByIdAndDelete(id).session(session);
+    const plan = await PlanSchema.findById(id).session(session);
     if (!plan) {
       await session.abortTransaction();
       session.endSession();
       return res.status(404).json({ message: "Тухайн Plan олдсонгүй" });
     }
 
+    await PlanSchema.deleteOne({ _id: id }).session(session);
     await Schedule.deleteMany({ planId: id }).session(session);
 
     await session.commitTransaction();
@@ -216,12 +342,12 @@ export const deletePlan = async (req, res) => {
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
-    console.error(error);
+    console.error("deletePlan error:", error);
     res.status(500).json({ message: "Plan устгахад алдаа гарлаа", error });
   }
 };
 
-// ---------------- GET PLAN ----------------
+// ---------------- GET SINGLE PLAN ----------------
 export const getPlan = async (req, res) => {
   try {
     const { id } = req.params;
@@ -230,11 +356,13 @@ export const getPlan = async (req, res) => {
       .populate("memberId", "name email")
       .populate("workoutTemplate")
       .populate("dietTemplate");
+
     if (!plan)
       return res.status(404).json({ message: "Тухайн Plan олдсонгүй" });
+
     res.status(200).json({ plan });
   } catch (error) {
-    console.error(error);
+    console.error("getPlan error:", error);
     res.status(500).json({ message: "Plan авахад алдаа гарлаа", error });
   }
 };
@@ -250,9 +378,10 @@ export const getPlansByMember = async (req, res) => {
       })
       .populate("workoutTemplate")
       .populate("dietTemplate");
+
     res.status(200).json({ plans });
   } catch (error) {
-    console.error(error);
+    console.error("getPlansByMember error:", error);
     res.status(500).json({ message: "Plans авахад алдаа гарлаа", error });
   }
 };
@@ -268,9 +397,10 @@ export const getPlansByTrainer = async (req, res) => {
       })
       .populate("workoutTemplate")
       .populate("dietTemplate");
+
     res.status(200).json({ plans });
   } catch (error) {
-    console.error(error);
+    console.error("getPlansByTrainer error:", error);
     res.status(500).json({ message: "Plans авахад алдаа гарлаа", error });
   }
 };
