@@ -33,11 +33,15 @@ const ScheduleDetailsModal = ({
 
   console.log(selectedSchedule);
 
+  // Compute workoutTemplate consistently (handles both attached workoutTemplate or populated workoutTemplateId)
+  const workoutTemplate =
+    selectedSchedule.workoutTemplate || selectedSchedule.workoutTemplateId;
+
   // Compute programDay for the selected date (if full program is available)
   const programDay = useMemo(() => {
     if (
       selectedSchedule.type !== "workout" ||
-      !selectedSchedule.workoutTemplateId?.program ||
+      !workoutTemplate?.program ||
       !selectedSchedule.date
     ) {
       return null;
@@ -58,13 +62,13 @@ const ScheduleDetailsModal = ({
     const dayName = weekDayMap[dayOfWeek];
 
     // Find matching program day
-    const matchingDay = selectedSchedule.workoutTemplateId.program.find(
+    const matchingDay = workoutTemplate.program.find(
       (day) => day.dayName === dayName
     );
 
     // Return if not rest day
     return matchingDay && !matchingDay.isRestDay ? matchingDay : null;
-  }, [selectedSchedule]);
+  }, [selectedSchedule, workoutTemplate]);
 
   // If programDay attached (from backend), use it; else compute
   const currentProgramDay = selectedSchedule.programDay || programDay;
@@ -297,7 +301,7 @@ const ScheduleDetailsModal = ({
                               <th className="px-4 py-3  text-xs font-medium uppercase tracking-wider text-center w-25">
                                 Дахилт
                               </th>
-                              <th className="px-4 py-3  text-xs font-medium  uppercase tracking-wider text-center w-25">
+                              <th className="px-4 py-3 text-left text-xs font-medium  uppercase tracking-wider w-32">
                                 Амралт(сек)
                               </th>
                               <th className="px-4 py-3 text-left text-xs font-medium  uppercase tracking-wider w-32">

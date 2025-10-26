@@ -698,7 +698,7 @@ const ProgressPage = () => {
   };
 
   return (
-    <div className="p-6 h-full w-full max-w-full bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg space-y-6 border border-cyan-100 shadow-lg">
+    <div className="p-6 h-full w-full max-w-full bg-cyan-50 rounded-lg space-y-6 ">
       {/* Header Section */}
       <ProgressHeader />
 

@@ -15,6 +15,7 @@ import {
   SquareChartGantt,
   CalendarSync,
   CalendarDays,
+  ClipboardClock,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -67,6 +68,11 @@ const Sidebar = () => {
         icon: <LayoutDashboard size={18} />,
       },
       {
+        path: "/trainer/test",
+        label: "Dashboard",
+        icon: <LayoutDashboard size={18} />,
+      },
+      {
         path: "/trainer/template",
         label: "Templates",
         icon: <CalendarSync size={18} />,
@@ -84,7 +90,7 @@ const Sidebar = () => {
       {
         path: "/trainer/schedule",
         label: "Schedule",
-        icon: <CalendarDays size={18} />,
+        icon: <ClipboardClock size={18} />,
       },
     ],
     user: [

@@ -6,17 +6,17 @@ const OverviewTemplateCard = ({ t, type, onView }) => {
   const Icon = type === "workout" ? Dumbbell : Utensils;
   const isWorkout = type === "workout";
 
-  // Professional Unsplash images - workout: gym scene, diet: balanced meal
-  const getImageUrl = () => {
+  // Remove image URL and replace with gradient backgrounds
+  const getBackgroundStyle = () => {
     if (isWorkout) {
-      // Strength training image
-      return "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=350&q=80";
+      // Energetic gradient for workout
+      return "bg-gradient-to-br from-blue-400 via-blue-500 to-indigo-600";
     }
-    // Diet: healthy plate
-    return "https://images.unsplash.com/photo-1521138124411-957f47d8b49d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=350&q=80";
+    // Fresh gradient for diet
+    return "bg-gradient-to-br from-green-400 via-green-500 to-emerald-600";
   };
 
-  const imageUrl = getImageUrl();
+  const backgroundStyle = getBackgroundStyle();
 
   // Calculate total exercises or meals based on model
   const totalExercises = isWorkout
@@ -52,21 +52,25 @@ const OverviewTemplateCard = ({ t, type, onView }) => {
       transition={{ duration: 0.2 }}
       className="bg-white rounded-sm shadow-md border border-gray-200 hover:border-gray-300 transition-all flex flex-col h-full min-h-[17rem] overflow-hidden group"
     >
-      {/* Image and Icon Overlay - Wider image aspect */}
-      <div className="relative h-40 bg-cover bg-center overflow-hidden">
-        <img
-          src={imageUrl}
-          alt={t.title}
-          className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
+      {/* Header with Gradient Background and Large Icon - Replaces image */}
+      <div
+        className={`relative h-40 ${backgroundStyle} flex items-center justify-center overflow-hidden`}
+      >
+        <div className="absolute inset-0 bg-black/10" />{" "}
+        {/* Subtle overlay for depth */}
+        <Icon
+          size={64} // Larger icon to fill the space
+          className="relative z-10 drop-shadow-lg"
+          strokeWidth={1}
         />
-        <div className="absolute top-3 right-3 bg-cyan-100 backdrop-blur-sm rounded-full p-2 shadow-lg">
+        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg">
           <Icon
             size={20}
             className={isWorkout ? "text-blue-600" : "text-green-600"}
           />
         </div>
-        <div className="absolute bottom-3 left-3  ">
-          <span className="text-sm font-semibold text-cyan-700 capitalize">
+        <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm rounded px-2 py-1">
+          <span className="text-sm font-semibold text-gray-800 capitalize">
             {type}
           </span>
         </div>
@@ -121,12 +125,14 @@ const OverviewTemplateCard = ({ t, type, onView }) => {
             onClick={() => onView(type, t)}
             className={
               isWorkout
-                ? "py-2.5 px-22 bg-blue-400 hover:bg-blue-100 rounded-lg transition-colors group-hover:text-blue-600"
-                : "py-2.5 px-22 bg-green-400 hover:bg-green-100 rounded-lg transition-colors group-hover:text-blue-600"
+                ? "py-2.5 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-1 group-hover:shadow-md" // Fixed px-22 to px-4 and added text-white
+                : "py-2.5 px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors flex items-center gap-1 group-hover:shadow-md" // Fixed px-22 to px-4 and added text-white
             }
             aria-label="View template details"
           >
             <Eye size={16} />
+            <span className="hidden sm:inline">View</span>{" "}
+            {/* Optional: Add text label on larger screens */}
           </button>
         </div>
       </div>

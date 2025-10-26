@@ -1,6 +1,6 @@
 // components/SchedulesHeader.jsx
 import React from "react";
-import { Calendar, Plus } from "lucide-react";
+import { Calendar, Plus, ClipboardClock } from "lucide-react";
 
 const SchedulesHeader = ({ onCreateSchedule }) => {
   return (
@@ -10,7 +10,7 @@ const SchedulesHeader = ({ onCreateSchedule }) => {
           <div className="space-y-1">
             <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-3">
               <div className="p-2 bg-cyan-500 rounded-xl text-white shadow-lg">
-                <Calendar className="w-6 h-6" aria-hidden="true" />
+                <ClipboardClock className="w-6 h-6" aria-hidden="true" />
               </div>
               <span>Хуваарь</span>
             </h1>

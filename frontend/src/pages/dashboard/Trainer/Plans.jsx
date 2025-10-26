@@ -11,6 +11,7 @@ import {
   Edit,
   Trash2,
   Plus,
+  SquareChartGantt,
 } from "lucide-react";
 import { usePlanStore } from "../../../store/planStore";
 import { useUserStore } from "../../../store/userStore";
@@ -306,10 +307,10 @@ const PlanT = () => {
   };
 
   return (
-    <div className="p-8 h-full bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg shadow-lg">
+    <div className="p-8 h-full bg-cyan-50 rounded-lg ">
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center gap-3">
-          <Calendar size={28} className="text-cyan-600" />
+          <SquareChartGantt size={28} className="text-cyan-600" />
           <h1 className="text-3xl font-bold text-gray-900">Training Plans</h1>
         </div>
         <button
@@ -327,7 +328,7 @@ const PlanT = () => {
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           >
-            <Calendar className="mx-auto mb-3 opacity-60" size={32} />
+            <SquareChartGantt className="mx-auto mb-3 opacity-60" size={32} />
           </motion.div>
           <p className="text-sm">Loading Plans...</p>
         </div>

@@ -13,6 +13,7 @@ import {
   Users,
   Dumbbell,
   Ruler,
+  ClipboardClock,
 } from "lucide-react";
 import SchedulesHeader from "../../../components/Schedule/SchedulesHeader";
 import SearchAndFilters from "../../../components/Schedule/SearchAndFilters";
@@ -285,6 +286,15 @@ const SchedulesPage = () => {
     });
     return map;
   }, [assignedMembers]);
+
+  // Workout template map for quick lookup using template IDs as keys
+  const templateMap = useMemo(() => {
+    const map = new Map();
+    allWorkoutTemplates.forEach((template) => {
+      map.set(template._id, template);
+    });
+    return map;
+  }, [allWorkoutTemplates]);
 
   // Enhance schedules with memberName and formatted times (memberId is Member ID string or Member object)
   const enhancedSchedules = useMemo(() => {
@@ -600,10 +610,45 @@ const SchedulesPage = () => {
         name: fullMember,
       };
     }
+
+    let fullTemplate = schedule.workoutTemplate || null;
+
+    const workoutTemplateId =
+      schedule.workoutTemplateId ||
+      (schedule.workoutTemplate && schedule.workoutTemplate._id) ||
+      (schedule.planId && schedule.planId.workoutTemplate?._id) ||
+      null;
+
+    if (!fullTemplate && workoutTemplateId) {
+      fullTemplate = templateMap.get(workoutTemplateId) || null;
+    }
+
+    if (!fullTemplate && schedule.planId) {
+      const planId =
+        typeof schedule.planId === "object"
+          ? schedule.planId._id
+          : schedule.planId;
+      const planObj = plans.find((p) => String(p._id) === String(planId));
+      if (planObj) {
+        fullTemplate =
+          planObj.workoutTemplate ||
+          (planObj.workoutTemplate?._id &&
+            templateMap.get(planObj.workoutTemplate._id)) ||
+          null;
+      }
+    }
+
     const enhancedSchedule = {
       ...schedule,
       memberId: fullMember,
+      workoutTemplate: fullTemplate,
+      // keep formatted times if already computed
+      formattedStartTime:
+        schedule.formattedStartTime || formatTime(schedule.startTime),
+      formattedEndTime:
+        schedule.formattedEndTime || formatTime(schedule.endTime),
     };
+
     setSelectedSchedule(enhancedSchedule);
     setIsSidebarOpen(true);
   };
@@ -751,7 +796,7 @@ const SchedulesPage = () => {
   if (!trainerId) {
     return (
       <div
-        className="flex justify-center items-center h-screen bg-gray-50"
+        className="flex justify-center items-center h-screen rounded-lg bg-cyan-50"
         role="status"
         aria-live="polite"
       >
@@ -766,12 +811,12 @@ const SchedulesPage = () => {
   if (isLoading || !currentTrainer) {
     return (
       <div
-        className="flex justify-center items-center h-screen bg-gray-50"
+        className="flex justify-center items-center h-screen rounded-lg bg-cyan-50"
         role="status"
         aria-live="polite"
       >
         <div className="text-xl text-gray-600 flex items-center space-x-2">
-          <Calendar className="w-5 h-5 animate-spin" aria-hidden="true" />
+          <ClipboardClock className="w-5 h-5 animate-spin" aria-hidden="true" />
           <span>Loading schedules...</span>
         </div>
       </div>
