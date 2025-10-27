@@ -1,90 +1,28 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useMemo,
-  useCallback,
-} from "react";
-import {
-  Users,
-  Activity,
-  Dumbbell,
-  Calendar,
-  ClipboardList,
-  TrendingUp,
-  Bell,
-  Search,
-  Plus,
-  MessageCircle,
-  FileText,
-  Heart,
-  Zap,
-  Target,
-  Edit3,
-  TrendingDown,
-  ArrowUp,
-  ArrowDown,
-  ChevronDown,
-  ChevronUp,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Ruler,
-  Check,
-  MapPin,
-} from "lucide-react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  Legend,
-  PieChart,
-  Pie,
-  Cell,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  Radar,
-} from "recharts";
+// Updated TrainerMainContent.jsx (import StatusCards and use it instead of inline cards)
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useUserStore } from "../../../store/userStore"; // Adjust path as needed
 import { useTemplateStore } from "../../../store/TemplateStore"; // Adjust path as needed
 import { useScheduleStore } from "../../../store/useScheduleStore";
 import { useMemberStore } from "../../../store/memberStore";
 import { usePlanStore } from "../../../store/planStore";
+import { useTrainerStore } from "../../../store/trainerStore";
 import OverviewTemplateCard from "../../../components/Trainer/home/OverviewTemplateCard"; // Updated import for the new overview card
 import DetailModal from "../../../components/Template/DetailModal"; // Import DetailModal for view details
 import { AnimatePresence, motion } from "framer-motion"; // For animations like in TemplateManager
 import TodaysSchedule from "../../../components/Trainer/home/TodaysSchedule"; // New import for separated component
+import MyStudents from "../../../components/Trainer/home/MyStudents"; // New import for separated students component
+import MyTemplates from "../../../components/Trainer/home/MyTemplates"; // New import for separated templates component
+import MyPlans from "../../../components/Trainer/home/MyPlans"; // New import for separated plans component
+import StatusCards from "../../../components/Trainer/home/StatusCards"; // New import for separated status cards component
 
 export default function TrainerMainContent() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedClient, setSelectedClient] = useState("All");
-  const [activeTab, setActiveTab] = useState("schedule"); // For schedule control tabs
-  const [activeTemplateTab, setActiveTemplateTab] = useState("workout");
-  const [expandedTemplateId, setExpandedTemplateId] = useState(null); // Optional: Keep if you want inline expand, but we'll use modals instead
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewType, setPreviewType] = useState(null);
   const [previewData, setPreviewData] = useState(null);
-  const [currentTemplateIndex, setCurrentTemplateIndex] = useState(0);
-
-  const sliderRef = useRef(null);
-  const containerRef = useRef(null);
+  // Removed: currentTemplateIndex, sliderRef, containerRef (now in MyTemplates)
 
   const { user, fetchUser } = useUserStore();
-  const {
-    workoutTemplates,
-    dietTemplates,
-    getWorkoutTemplates,
-    getDietTemplates,
-    // Remove CRUD hooks since not needed
-    isLoadingWorkout,
-    isLoadingDiet,
-  } = useTemplateStore();
+
   const {
     todaySchedules,
     getTodaySchedules,
@@ -92,7 +30,14 @@ export default function TrainerMainContent() {
     isLoading: isLoadingSchedules,
   } = useScheduleStore();
   const { members: allMembers, getAllMembers } = useMemberStore();
-  const { plans: trainerPlans, getPlans } = usePlanStore();
+  const { plans: _trainerPlans, getPlans } = usePlanStore();
+  const {
+    currentTrainer,
+    getTrainerById,
+    isLoading: isLoadingTrainer,
+  } = useTrainerStore();
+  const { workoutTemplates, dietTemplates } = useTemplateStore();
+  console.log("Current Trainer Data:", currentTrainer);
 
   useEffect(() => {
     fetchUser();
@@ -100,68 +45,24 @@ export default function TrainerMainContent() {
 
   useEffect(() => {
     if (user?._id) {
-      getWorkoutTemplates(user._id);
-      getDietTemplates(user._id);
+      // Keep fetching templates here so data is available for MyTemplates
+      useTemplateStore.getState().getWorkoutTemplates(user._id);
+      useTemplateStore.getState().getDietTemplates(user._id);
       getTodaySchedules(user._id);
       getAllMembers();
       getPlans(user._id);
+      getTrainerById(user._id);
     }
   }, [
     user?._id,
-    getWorkoutTemplates,
-    getDietTemplates,
+    // Removed template fetches; use store.getState() for direct call if needed, but better to import actions
     getTodaySchedules,
     getAllMembers,
     getPlans,
+    getTrainerById,
   ]);
 
-  // Define templates early to avoid initialization errors
-  const templates =
-    activeTemplateTab === "workout" ? workoutTemplates : dietTemplates;
-  const isLoadingTemplates =
-    activeTemplateTab === "workout" ? isLoadingWorkout : isLoadingDiet;
-
-  // Reset slider index when templates change
-  useEffect(() => {
-    setCurrentTemplateIndex(0);
-  }, [workoutTemplates, dietTemplates]);
-
-  // Compute translateX based on container width
-  const cardsPerView = 3;
-  const gapSize = 16; // px for gap-4
-  const [translateX, setTranslateX] = useState(0);
-
-  useEffect(() => {
-    const updateTranslate = () => {
-      if (!containerRef.current || templates.length <= cardsPerView) {
-        setTranslateX(0);
-        return;
-      }
-      const containerWidth = containerRef.current.offsetWidth;
-      const totalGap = (cardsPerView - 1) * gapSize;
-      const cardWidth = (containerWidth - totalGap) / cardsPerView;
-      const step = cardWidth + gapSize;
-      setTranslateX(-currentTemplateIndex * step);
-    };
-
-    updateTranslate();
-    window.addEventListener("resize", updateTranslate);
-    return () => window.removeEventListener("resize", updateTranslate);
-  }, [currentTemplateIndex, templates, gapSize, cardsPerView]);
-
-  const maxIndex = Math.max(0, templates.length - cardsPerView);
-
-  const handleNextTemplate = () => {
-    setCurrentTemplateIndex((prev) => Math.min(prev + 1, maxIndex));
-  };
-
-  const handlePrevTemplate = () => {
-    setCurrentTemplateIndex((prev) => Math.max(prev - 1, 0));
-  };
-
-  const goToIndex = (index) => {
-    setCurrentTemplateIndex(index);
-  };
+  // Removed: templates, isLoadingTemplates, useEffect for reset index, translateX logic, navigation handlers (now in MyTemplates)
 
   const handleViewTemplate = (type, data) => {
     setPreviewType(type);
@@ -169,7 +70,7 @@ export default function TrainerMainContent() {
     setPreviewOpen(true);
   };
 
-  // Schedule helpers (copied/adapted from SchedulesPage for clean integration)
+  // Schedule helpers (unchanged)
   const formatDate = (date, formatStr) => {
     const d = new Date(date);
     const day = String(d.getDate()).padStart(2, "0");
@@ -323,127 +224,76 @@ export default function TrainerMainContent() {
     }
   };
 
-  // ... (keep radarData, handleScheduleTab, scheduleActions unchanged)
+  // Enhanced students list from currentTrainer (assuming currentTrainer.students is an array of student objects)
+  const enhancedStudents = useMemo(() => {
+    if (!currentTrainer?.students || currentTrainer.students.length === 0)
+      return [];
+    return currentTrainer.students.map((student) => ({
+      ...student,
+      displayName: getMemberDisplayName(student),
+      avatar:
+        toAvatarUrl(
+          student.profileImage || student.avatar || student.userId?.profileImage
+        ) || "/default-avatar.png",
+    }));
+  }, [currentTrainer, toAvatarUrl]);
+
+  // Status card data (passed to separate component)
+  const totalStudents = enhancedStudents.length;
+  const totalTemplates =
+    (workoutTemplates || []).length + (dietTemplates || []).length;
+  const todaySchedulesCount = enhancedTodaySchedules.length;
+  const activePlansCount = useMemo(() => {
+    // Assuming plans have a 'status' field where 'active' indicates active plans.
+    // Adjust the filter logic based on your plan schema (e.g., !plan.isCompleted || plan.status === 'active').
+    return (_trainerPlans || []).filter(
+      (plan) => plan.status === "active" || !plan.isCompleted
+    ).length;
+  }, [_trainerPlans]);
 
   return (
-    <main className="p-4 md:p-6 lg:p-8 rounded-lg bg-cyan-50 min-h-screen">
-      {/* Today's Schedule Section - Now using separate component */}
-      <TodaysSchedule
-        enhancedTodaySchedules={enhancedTodaySchedules}
-        isLoadingSchedules={isLoadingSchedules}
-        formatDate={formatDate}
-        getDefaultTimes={getDefaultTimes}
-        handleMarkComplete={handleMarkComplete}
-        user={user}
+    <main className="p-4 md:p-6 lg:p-8 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 min-h-screen">
+      {/* Status Cards Section - Using separate component */}
+      <StatusCards
+        totalStudents={totalStudents}
+        activePlansCount={activePlansCount}
+        totalTemplates={totalTemplates}
+        todaySchedulesCount={todaySchedulesCount}
       />
 
-      {/* Simplified Templates Overview - Like TemplateManager but read-only with slider */}
-      <section className="mb-8 ">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-              <FileText className="text-indigo-600" /> My Templates
-            </h2>
-          </div>
-          <div className="flex bg-white rounded-lg border border-gray-200 overflow-hidden">
-            {["workout", "diet"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTemplateTab(tab)}
-                className={`px-4 py-2 text-sm font-medium transition-all ${
-                  activeTemplateTab === tab
-                    ? "bg-indigo-600 text-white"
-                    : "text-gray-600 hover:text-indigo-600"
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}s
-              </button>
-            ))}
-          </div>
+      {/* Today's Schedule and Students Section - Grid layout for equal height */}
+      <div className="mb-8 grid grid-cols-1 min-h-90 lg:grid-cols-[1fr_355px] gap-6">
+        {/* Today's Schedule - Left side */}
+        <div className="lg:col-span-1 h-full">
+          <TodaysSchedule
+            enhancedTodaySchedules={enhancedTodaySchedules}
+            isLoadingSchedules={isLoadingSchedules}
+            formatDate={formatDate}
+            getDefaultTimes={getDefaultTimes}
+            handleMarkComplete={handleMarkComplete}
+            user={user}
+          />
         </div>
 
-        {isLoadingTemplates ? (
-          <div className="text-center text-gray-500 py-12 animate-pulse">
-            <FileText className="mx-auto mb-3 opacity-60" size={32} />
-            <p className="text-sm">Loading Templates...</p>
-          </div>
-        ) : templates.length > 0 ? (
-          <>
-            {/* Slider Container */}
-            <div
-              ref={containerRef}
-              className="relative overflow-hidden rounded-lg"
-            >
-              <motion.div
-                ref={sliderRef}
-                className="flex gap-4"
-                animate={{ x: translateX }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              >
-                {templates.map((t) => (
-                  <div
-                    key={t._id}
-                    className="flex-shrink-0 w-[calc((100%-32px)/3)]"
-                  >
-                    <OverviewTemplateCard
-                      t={t}
-                      type={activeTemplateTab}
-                      onView={(templateType, templateData) =>
-                        handleViewTemplate(activeTemplateTab, templateData)
-                      } // Adjusted to ignore passed type and use activeTemplateTab
-                    />
-                  </div>
-                ))}
-              </motion.div>
+        {/* Students Section - Right side */}
+        <div className="lg:col-span-1 h-full">
+          <MyStudents
+            enhancedStudents={enhancedStudents}
+            isLoadingTrainer={isLoadingTrainer}
+          />
+        </div>
+      </div>
 
-              {/* Navigation Buttons */}
-              {currentTemplateIndex > 0 && (
-                <button
-                  onClick={handlePrevTemplate}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white shadow-md rounded-full p-2 transition-all z-10 border border-gray-200"
-                  aria-label="Previous templates"
-                >
-                  <ChevronLeft size={20} className="text-gray-600" />
-                </button>
-              )}
-              {currentTemplateIndex < maxIndex && (
-                <button
-                  onClick={handleNextTemplate}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white shadow-md rounded-full p-2 transition-all z-10 border border-gray-200"
-                  aria-label="Next templates"
-                >
-                  <ChevronRight size={20} className="text-gray-600" />
-                </button>
-              )}
-            </div>
+      {/* Separated Templates Overview */}
+      <MyTemplates onViewTemplate={handleViewTemplate} />
 
-            {/* Indicator (optional) */}
-            {templates.length > cardsPerView && (
-              <div className="flex justify-center mt-4 gap-1">
-                {Array.from({ length: maxIndex + 1 }).map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => goToIndex(i)}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      currentTemplateIndex === i
-                        ? "bg-indigo-600"
-                        : "bg-gray-300"
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="text-center py-12 text-gray-400">
-            <FileText className="mx-auto mb-3 opacity-60" size={32} />
-            <p className="text-sm font-medium">No templates yet.</p>
-            <p className="text-xs mt-1">
-              Create some in the Templates section!
-            </p>
-          </div>
-        )}
-      </section>
+      {/* Separated Plans Overview - New section */}
+      <MyPlans
+        plans={_trainerPlans}
+        currentTrainer={currentTrainer}
+        toAvatarUrl={toAvatarUrl}
+        onViewTemplate={handleViewTemplate} // delegate preview to parent modal
+      />
 
       {/* Detail Modal for viewing template details */}
       <AnimatePresence>

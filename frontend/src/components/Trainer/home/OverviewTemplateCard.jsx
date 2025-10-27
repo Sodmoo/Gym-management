@@ -79,7 +79,7 @@ const OverviewTemplateCard = ({ t, type, onView }) => {
       {/* Content Body - Increased padding for wider feel */}
       <div className="p-4 flex flex-col flex-1 justify-between">
         {/* Title, Duration, Goal */}
-        <div className="mb-4">
+        <div className="mb-1">
           <div className="flex justify-between items-start mb-2">
             <h3 className="text-base font-semibold text-gray-900 line-clamp-1 pr-2">
               {t.title}
@@ -90,7 +90,7 @@ const OverviewTemplateCard = ({ t, type, onView }) => {
             </div>
           </div>
           {t.goal && (
-            <div className="flex items-center gap-1.5 mb-2 text-xs text-gray-600">
+            <div className="flex items-center gap-1.5 mb-1 text-xs text-gray-600">
               <Target
                 size={12}
                 className={isWorkout ? "text-blue-500" : "text-green-500"}
@@ -105,7 +105,7 @@ const OverviewTemplateCard = ({ t, type, onView }) => {
         </div>
 
         {/* Stats Row */}
-        <div className="mb-1">
+        <div className="mb-1 ">
           <div
             className={
               isWorkout
@@ -120,7 +120,7 @@ const OverviewTemplateCard = ({ t, type, onView }) => {
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-3 border-t border-gray-100 text-xs text-gray-500">
-          <span>updated {daysAgo}</span>
+          <span className="text-md">updated {daysAgo}</span>
           <button
             onClick={() => onView(type, t)}
             className={

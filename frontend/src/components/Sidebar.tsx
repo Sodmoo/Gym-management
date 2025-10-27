@@ -67,11 +67,7 @@ const Sidebar = () => {
         label: "Dashboard",
         icon: <LayoutDashboard size={18} />,
       },
-      {
-        path: "/trainer/test",
-        label: "Dashboard",
-        icon: <LayoutDashboard size={18} />,
-      },
+
       {
         path: "/trainer/template",
         label: "Templates",
