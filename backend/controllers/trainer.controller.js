@@ -1121,16 +1121,14 @@ export const getScheduleById = async (req, res) => {
     );
 
     // Now with population
-    const schedules = await scheduleSchema
-      .findById(id)
-      .populate([
-        { path: "planId" },
-        { path: "trainerId" },
-        {
-          path: "memberId",
-          populate: { path: "userId", select: "surname username email" },
-        },
-      ]);
+    const schedules = await scheduleSchema.findById(id).populate([
+      { path: "planId" },
+      { path: "trainerId" },
+      {
+        path: "memberId",
+        populate: { path: "userId", select: "surname username email" },
+      },
+    ]);
 
     console.log("Populated schedule:", JSON.stringify(schedules, null, 2)); // Check if member is null here
 
@@ -1145,5 +1143,172 @@ export const getScheduleById = async (req, res) => {
   } catch (error) {
     console.error("Error fetching schedule:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getAggregateMeasurement = async (req, res) => {
+  try {
+    const { trainerId } = req.params;
+    const { period = "3months" } = req.query;
+
+    // Trainer-ийн students олох
+    const trainer = await Trainer.findById(trainerId).select("students");
+    if (!trainer || !trainer.students || trainer.students.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No students found for this trainer" });
+    }
+
+    const studentIds = trainer.students; // Array of member _id
+
+    // Period start date тооцоолох
+    const now = new Date();
+    let startDate;
+    switch (period) {
+      case "1month":
+        startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        break;
+      case "3months":
+        startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+        break;
+      case "6months":
+        startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+        break;
+      case "1year":
+        startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+        break;
+      case "alltime":
+        startDate = new Date(0);
+        break;
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+    }
+
+    // Measurements aggregate
+    const measurements = await measurementSchema
+      .find({
+        member: { $in: studentIds },
+        date: { $gte: startDate, $lte: now },
+      })
+      .sort({ date: 1 });
+
+    // Metrics: зөвхөн weight, bodyFat, muscleMass
+    const metrics = ["weight", "bodyFat", "muscleMass"];
+    const aggregateData = {
+      totalStudents: studentIds.length,
+      totalMeasurements: measurements.length,
+      avgMetrics: {},
+      chartData: { labels: [], datasets: [] },
+    };
+
+    // Avg metrics & trend тооцоо
+    metrics.forEach((metric) => {
+      const filtered = measurements.filter(
+        (m) => m[metric] !== undefined && m[metric] !== null && m[metric] > 0
+      );
+      if (filtered.length === 0) {
+        aggregateData.avgMetrics[metric] = {
+          current: 0,
+          trend: 0,
+          unit: metric === "bodyFat" ? "%" : "lbs",
+        };
+        return;
+      }
+
+      // Overall average
+      const avgCurrent =
+        Math.round(
+          (filtered.reduce((sum, m) => sum + m[metric], 0) / filtered.length) *
+            10
+        ) / 10;
+
+      // Trend: first vs last measurement per period
+      const first = filtered[0][metric];
+      const last = filtered[filtered.length - 1][metric];
+      const change = last - first;
+      const trend =
+        first !== 0 ? Math.round((change / first) * 100 * 10) / 10 : 0;
+
+      aggregateData.avgMetrics[metric] = {
+        current: avgCurrent,
+        trend,
+        unit: metric === "bodyFat" ? "%" : "lbs",
+      };
+    });
+
+    // Chart data: Line chart-д ашиглах (date group хийж avg) - Fixed chronological sorting
+    const dateGroups = {};
+    measurements.forEach((m) => {
+      const dateKey = m.date.toISOString().split("T")[0]; // YYYY-MM-DD for sorting
+      const displayLabel = m.date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      if (!dateGroups[dateKey]) {
+        dateGroups[dateKey] = {
+          displayLabel, // Store formatted label
+          totals: {},
+          counts: {},
+        };
+      }
+      metrics.forEach((metric) => {
+        if (m[metric] !== undefined && m[metric] !== null) {
+          dateGroups[dateKey].totals[metric] =
+            (dateGroups[dateKey].totals[metric] || 0) + m[metric];
+          dateGroups[dateKey].counts[metric] =
+            (dateGroups[dateKey].counts[metric] || 0) + 1;
+        }
+      });
+    });
+
+    // Sort by dateKey (YYYY-MM-DD sorts naturally as strings chronologically)
+    const sortedDateKeys = Object.keys(dateGroups).sort();
+    aggregateData.chartData.labels = sortedDateKeys.map(
+      (dateKey) => dateGroups[dateKey].displayLabel
+    );
+
+    metrics.forEach((metric, idx) => {
+      const color = `hsl(${(idx * 360) / metrics.length}, 70%, 50%)`;
+      aggregateData.chartData.datasets.push({
+        label: metric.charAt(0).toUpperCase() + metric.slice(1),
+        data: sortedDateKeys.map((dateKey) => {
+          const group = dateGroups[dateKey];
+          return group.counts[metric] > 0
+            ? Math.round((group.totals[metric] / group.counts[metric]) * 10) /
+                10
+            : null;
+        }),
+        borderColor: color,
+        backgroundColor: color + "20", // Transparent fill
+        tension: 0.4,
+        fill: true,
+      });
+    });
+
+    // Goals aggregate (хэрэв goalSchema байгаа бол)
+    let goalStats = null;
+    if (goalSchema) {
+      const allGoals = await goalSchema.find({ member: { $in: studentIds } });
+      goalStats = {
+        total: allGoals.length,
+        completed: allGoals.filter((g) => g.progress >= 100).length,
+        inProgress: allGoals.filter((g) => g.progress > 0 && g.progress < 100)
+          .length,
+        pending:
+          allGoals.length -
+          allGoals.filter((g) => g.progress >= 100).length -
+          allGoals.filter((g) => g.progress > 0 && g.progress < 100).length,
+      };
+      aggregateData.goalStats = goalStats;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: aggregateData,
+      period,
+    });
+  } catch (error) {
+    console.error("Aggregate measurement error:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };

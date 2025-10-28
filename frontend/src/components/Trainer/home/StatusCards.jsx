@@ -98,7 +98,7 @@ const StatusCards = ({
             ></div>
 
             {/* Inner card */}
-            <div className="relative z-10 bg-white rounded-sm p-5 shadow-sm hover:shadow-lg transition-all duration-300">
+            <div className="relative z-5 bg-white rounded-sm p-5 shadow-sm hover:shadow-lg transition-all duration-300">
               <div className="flex items-center justify-between mb-2">
                 <div
                   className={`flex h-15 w-15 items-center justify-center rounded-lg text-white shadow-sm ${card.iconBg}`}

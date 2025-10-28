@@ -24,6 +24,7 @@ import {
   deleteGoal,
   getGoalsByMember,
   getMeasurementsByMember,
+  getAggregateMeasurement,
 } from "../controllers/trainer.controller.js";
 import { verifyToken } from "../middleware/verifyToken.js";
 import {
@@ -71,6 +72,11 @@ router.post("/addMeasurement", verifyToken, addmeasurement);
 router.put("/updateMeasurement/:id", verifyToken, editmeasurement);
 router.delete("/deleteMeasurement/:id", verifyToken, deleteMeasurement);
 router.get("/getMeasurement/:id", verifyToken, getMeasurements);
+router.get(
+  "/getAggregatedMeasurements/:trainerId",
+  verifyToken,
+  getAggregateMeasurement
+);
 
 router.post("/addGoal", verifyToken, addGoal);
 router.put("/updateGoal/:id", verifyToken, editGoal);

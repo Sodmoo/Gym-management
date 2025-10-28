@@ -21,6 +21,12 @@ const MyTemplates = ({ onViewTemplate }) => {
   const isLoadingTemplates =
     activeTemplateTab === "workout" ? isLoadingWorkout : isLoadingDiet;
 
+  // Translation for tabs
+  const tabTranslations = {
+    workout: "Дасгал",
+    diet: "Хооллолт",
+  };
+
   // Reset slider index when templates change
   useEffect(() => {
     setCurrentTemplateIndex(0);
@@ -72,7 +78,7 @@ const MyTemplates = ({ onViewTemplate }) => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-            <FileText className="text-indigo-600" /> My Templates
+            <FileText className="text-indigo-600" /> Миний загварууд
           </h2>
         </div>
         <div className="flex bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -86,7 +92,7 @@ const MyTemplates = ({ onViewTemplate }) => {
                   : "text-gray-600 hover:text-indigo-600"
               }`}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}s
+              {tabTranslations[tab]}
             </button>
           ))}
         </div>
@@ -95,7 +101,7 @@ const MyTemplates = ({ onViewTemplate }) => {
       {isLoadingTemplates ? (
         <div className="text-center text-gray-500 py-12 animate-pulse">
           <FileText className="mx-auto mb-3 opacity-60" size={32} />
-          <p className="text-sm">Loading Templates...</p>
+          <p className="text-sm">Загваруудыг ачаалж байна...</p>
         </div>
       ) : templates.length > 0 ? (
         <>
@@ -129,7 +135,7 @@ const MyTemplates = ({ onViewTemplate }) => {
               <button
                 onClick={handlePrevTemplate}
                 className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white shadow-md rounded-full p-2 transition-all z-10 border border-gray-200"
-                aria-label="Previous templates"
+                aria-label="Өмнөх загварууд"
               >
                 <ChevronLeft size={20} className="text-gray-600" />
               </button>
@@ -138,7 +144,7 @@ const MyTemplates = ({ onViewTemplate }) => {
               <button
                 onClick={handleNextTemplate}
                 className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white shadow-md rounded-full p-2 transition-all z-10 border border-gray-200"
-                aria-label="Next templates"
+                aria-label="Дараагийн загварууд"
               >
                 <ChevronRight size={20} className="text-gray-600" />
               </button>
@@ -163,8 +169,8 @@ const MyTemplates = ({ onViewTemplate }) => {
       ) : (
         <div className="text-center py-12 text-gray-400">
           <FileText className="mx-auto mb-3 opacity-60" size={32} />
-          <p className="text-sm font-medium">No templates yet.</p>
-          <p className="text-xs mt-1">Create some in the Templates section!</p>
+          <p className="text-sm font-medium">Одоогоор загвар байхгүй.</p>
+          <p className="text-xs mt-1">Загваруудын хэсэгт шинээр үүсгэ!</p>
         </div>
       )}
     </section>

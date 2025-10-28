@@ -75,8 +75,7 @@ const TemplateManager = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this template?"))
-      return;
+    if (!window.confirm("Энэ загварыг устгахдаа итгэлтэй байна уу?")) return;
     if (activeTab === "workout") {
       await deleteWorkoutTemplate(id);
     } else {
@@ -129,7 +128,7 @@ const TemplateManager = () => {
                   : "text-gray-600 hover:text-cyan-600"
               }`}
             >
-              {tab === "workout" ? "Workouts" : "Diets"}
+              {tab === "workout" ? "Дасгалууд" : "Хоолны дэглэмүүд"}
             </motion.button>
           ))}
         </div>
@@ -142,7 +141,7 @@ const TemplateManager = () => {
           whileHover={{ scale: 1.05 }}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md"
         >
-          <Plus size={16} /> Add Template
+          <Plus size={16} /> Загвар нэмэх
         </motion.button>
       </div>
 
@@ -155,7 +154,7 @@ const TemplateManager = () => {
           >
             <FileText className="mx-auto mb-3 opacity-60" size={32} />
           </motion.div>
-          <p className="text-sm">Loading Templates...</p>
+          <p className="text-sm">Загварууд ачаалж байна...</p>
         </div>
       ) : currentTemplates.length ? (
         <>
@@ -194,7 +193,7 @@ const TemplateManager = () => {
                 disabled={currentPage === 1}
                 className="px-4 py-2 bg-cyan-600 text-white rounded-lg disabled:bg-gray-300"
               >
-                Prev
+                Өмнөх
               </button>
               <span className="text-gray-700 font-medium">
                 {currentPage} / {totalPages}
@@ -206,7 +205,7 @@ const TemplateManager = () => {
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 bg-cyan-600 text-white rounded-lg disabled:bg-gray-300"
               >
-                Next
+                Дараах
               </button>
             </div>
           )}
@@ -214,8 +213,8 @@ const TemplateManager = () => {
       ) : (
         <div className="text-center py-12 text-gray-400">
           <FileText className="mx-auto mb-3 opacity-60" size={32} />
-          <p className="text-sm font-medium">No templates yet.</p>
-          <p className="text-xs mt-1">Create one to get started!</p>
+          <p className="text-sm font-medium">Одоогоор загвар байхгүй.</p>
+          <p className="text-xs mt-1">Эхлэхийн тулд нэг үүсгэнэ үү!</p>
         </div>
       )}
 

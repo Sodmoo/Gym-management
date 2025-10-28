@@ -1,25 +1,64 @@
-// Updated TrainerMainContent.jsx (import StatusCards and use it instead of inline cards)
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useUserStore } from "../../../store/userStore"; // Adjust path as needed
-import { useTemplateStore } from "../../../store/TemplateStore"; // Adjust path as needed
+// Updated TrainerMainContent.jsx with performance optimizations
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  Suspense,
+  lazy,
+} from "react";
+import { useUserStore } from "../../../store/userStore";
+import { useTemplateStore } from "../../../store/TemplateStore";
 import { useScheduleStore } from "../../../store/useScheduleStore";
 import { useMemberStore } from "../../../store/memberStore";
 import { usePlanStore } from "../../../store/planStore";
 import { useTrainerStore } from "../../../store/trainerStore";
-import OverviewTemplateCard from "../../../components/Trainer/home/OverviewTemplateCard"; // Updated import for the new overview card
-import DetailModal from "../../../components/Template/DetailModal"; // Import DetailModal for view details
-import { AnimatePresence, motion } from "framer-motion"; // For animations like in TemplateManager
-import TodaysSchedule from "../../../components/Trainer/home/TodaysSchedule"; // New import for separated component
-import MyStudents from "../../../components/Trainer/home/MyStudents"; // New import for separated students component
-import MyTemplates from "../../../components/Trainer/home/MyTemplates"; // New import for separated templates component
-import MyPlans from "../../../components/Trainer/home/MyPlans"; // New import for separated plans component
-import StatusCards from "../../../components/Trainer/home/StatusCards"; // New import for separated status cards component
+import { useGoalsMeasurementsStore } from "../../../store/useGoalsMeasurementsStore";
+import DetailModal from "../../../components/Template/DetailModal";
+import { AnimatePresence } from "framer-motion";
+import { RefreshCw, AlertCircle } from "lucide-react";
+
+// Lazy load heavy components to improve initial load time
+const StatusCards = lazy(() =>
+  import("../../../components/Trainer/home/StatusCards")
+);
+const TodaysSchedule = lazy(() =>
+  import("../../../components/Trainer/home/TodaysSchedule")
+);
+const MyStudents = lazy(() =>
+  import("../../../components/Trainer/home/MyStudents")
+);
+const MyTemplates = lazy(() =>
+  import("../../../components/Trainer/home/MyTemplates")
+);
+const MyPlans = lazy(() => import("../../../components/Trainer/home/MyPlans"));
+const OverallProgressChart = lazy(() =>
+  import("../../../components/Trainer/home/OverallProgressChart")
+);
+
+// Error boundary wrapper
+const ErrorFallback = ({ error, onRetry }) => (
+  <div className="flex flex-col items-center justify-center p-8 bg-red-50 rounded-lg border border-red-200">
+    <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+    <p className="text-red-600 mb-4 text-center">
+      {error.message || "Алдаа гарлаа"}
+    </p>
+    <button
+      onClick={onRetry}
+      className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+    >
+      Дахин ачаалах
+    </button>
+  </div>
+);
 
 export default function TrainerMainContent() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewType, setPreviewType] = useState(null);
   const [previewData, setPreviewData] = useState(null);
-  // Removed: currentTemplateIndex, sliderRef, containerRef (now in MyTemplates)
+  const [selectedPeriod, setSelectedPeriod] = useState("3months");
+  const [error, setError] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { user, fetchUser } = useUserStore();
 
@@ -36,8 +75,60 @@ export default function TrainerMainContent() {
     getTrainerById,
     isLoading: isLoadingTrainer,
   } = useTrainerStore();
-  const { workoutTemplates, dietTemplates } = useTemplateStore();
-  console.log("Current Trainer Data:", currentTrainer);
+  const {
+    workoutTemplates,
+    dietTemplates,
+    getWorkoutTemplates,
+    getDietTemplates,
+  } = useTemplateStore();
+  const {
+    aggregateMeasurement,
+    getAggregateMeasurement,
+    isLoading: isLoadingAggregate,
+  } = useGoalsMeasurementsStore();
+
+  // Consolidated fetch with timeout and better error handling
+  const fetchAllData = useCallback(
+    async (trainerId, period) => {
+      setIsRefreshing(true);
+      setError(null);
+      const timeoutPromise = new Promise(
+        (_, reject) =>
+          setTimeout(
+            () => reject(new Error("Ачаалал удаан байна. Холбоо шалгаарай.")),
+            10000
+          ) // 10s timeout
+      );
+      try {
+        await Promise.race([
+          Promise.allSettled([
+            getWorkoutTemplates(trainerId),
+            getDietTemplates(trainerId),
+            getTodaySchedules(trainerId),
+            getAllMembers(),
+            getPlans(trainerId),
+            getTrainerById(trainerId),
+            getAggregateMeasurement(trainerId, period),
+          ]),
+          timeoutPromise,
+        ]);
+      } catch (err) {
+        setError(err);
+        console.error("Error fetching data:", err);
+      } finally {
+        setIsRefreshing(false);
+      }
+    },
+    [
+      getWorkoutTemplates,
+      getDietTemplates,
+      getTodaySchedules,
+      getAllMembers,
+      getPlans,
+      getTrainerById,
+      getAggregateMeasurement,
+    ]
+  );
 
   useEffect(() => {
     fetchUser();
@@ -45,33 +136,32 @@ export default function TrainerMainContent() {
 
   useEffect(() => {
     if (user?._id) {
-      // Keep fetching templates here so data is available for MyTemplates
-      useTemplateStore.getState().getWorkoutTemplates(user._id);
-      useTemplateStore.getState().getDietTemplates(user._id);
-      getTodaySchedules(user._id);
-      getAllMembers();
-      getPlans(user._id);
-      getTrainerById(user._id);
+      const timer = setTimeout(
+        () => fetchAllData(user._id, selectedPeriod),
+        100
+      ); // Slight delay to batch
+      return () => clearTimeout(timer);
     }
-  }, [
-    user?._id,
-    // Removed template fetches; use store.getState() for direct call if needed, but better to import actions
-    getTodaySchedules,
-    getAllMembers,
-    getPlans,
-    getTrainerById,
-  ]);
+  }, [user?._id, selectedPeriod, fetchAllData]);
 
-  // Removed: templates, isLoadingTemplates, useEffect for reset index, translateX logic, navigation handlers (now in MyTemplates)
+  const handlePeriodChange = useCallback((period) => {
+    setSelectedPeriod(period);
+  }, []);
 
-  const handleViewTemplate = (type, data) => {
+  const handleViewTemplate = useCallback((type, data) => {
     setPreviewType(type);
     setPreviewData(data);
     setPreviewOpen(true);
-  };
+  }, []);
 
-  // Schedule helpers (unchanged)
-  const formatDate = (date, formatStr) => {
+  const handleRefresh = useCallback(() => {
+    if (user?._id) {
+      fetchAllData(user?._id, selectedPeriod);
+    }
+  }, [user?._id, selectedPeriod, fetchAllData]);
+
+  // Optimized format functions (stable)
+  const formatDate = useCallback((date, formatStr) => {
     const d = new Date(date);
     const day = String(d.getDate()).padStart(2, "0");
     const month = String(d.getMonth() + 1).padStart(2, "0");
@@ -92,7 +182,7 @@ export default function TrainerMainContent() {
       });
     if (formatStr === "HH:mm") return `${hours}:${minutes}`;
     return d.toLocaleDateString("en-US");
-  };
+  }, []);
 
   const formatTime = useCallback((time) => {
     if (!time) return null;
@@ -103,16 +193,16 @@ export default function TrainerMainContent() {
     return `${hours}:${minutes}`;
   }, []);
 
-  const getDefaultTimes = (schedule) => {
+  const getDefaultTimes = useCallback((schedule) => {
     const start = schedule.formattedStartTime;
     const end = schedule.formattedEndTime;
     if (!start || !end) {
       return { startTime: "Unscheduled", endTime: "" };
     }
     return { startTime: start, endTime: end };
-  };
+  }, []);
 
-  const getMemberDisplayName = (member) => {
+  const getMemberDisplayName = useCallback((member) => {
     return (
       member?.username ||
       member?.name ||
@@ -120,16 +210,7 @@ export default function TrainerMainContent() {
       member?._id ||
       "Unknown"
     );
-  };
-
-  // Member map for quick lookup
-  const memberMap = useMemo(() => {
-    const map = new Map();
-    allMembers.forEach((member) => {
-      map.set(member._id, getMemberDisplayName(member));
-    });
-    return map;
-  }, [allMembers]);
+  }, []);
 
   const API_BASE =
     (import.meta.env.VITE_API_URL &&
@@ -146,9 +227,20 @@ export default function TrainerMainContent() {
     [API_BASE]
   );
 
-  // Enhance todaySchedules with memberName, formatted times, member image, and status
+  // Optimized memberMap (only recreate if allMembers changes)
+  const memberMap = useMemo(() => {
+    const map = new Map();
+    allMembers.forEach((member) => {
+      map.set(member._id, getMemberDisplayName(member));
+    });
+    return map;
+  }, [allMembers]);
+
+  // Enhanced todaySchedules (limit processing if too many)
   const enhancedTodaySchedules = useMemo(() => {
-    return todaySchedules
+    // Limit to first 50 for performance if too many
+    const limitedSchedules = todaySchedules.slice(0, 50);
+    return limitedSchedules
       .map((schedule) => {
         const rawMember = schedule.memberId;
         let memberId = null;
@@ -156,7 +248,6 @@ export default function TrainerMainContent() {
         let fullMemberObj = null;
 
         if (rawMember && typeof rawMember === "object") {
-          // schedule already contains populated member object
           fullMemberObj = rawMember;
           memberId = rawMember._id || rawMember.memberId || null;
           memberName = getMemberDisplayName(fullMemberObj);
@@ -180,7 +271,6 @@ export default function TrainerMainContent() {
           fullMemberObj?.userId?.profileImage ||
           null;
 
-        // Determine status based on schedule properties (assuming isCompleted or status field)
         const status = schedule.isCompleted
           ? "completed"
           : schedule.status === "confirmed"
@@ -195,7 +285,6 @@ export default function TrainerMainContent() {
           formattedStartTime: formatTime(schedule.startTime),
           formattedEndTime: formatTime(schedule.endTime),
           status,
-          // Calculate duration for display
           duration:
             schedule.endTime && schedule.startTime
               ? Math.round(
@@ -212,23 +301,35 @@ export default function TrainerMainContent() {
           new Date(`1970/01/01 ${aTime}`) - new Date(`1970/01/01 ${bTime}`)
         );
       });
-  }, [todaySchedules, memberMap, allMembers, formatTime, toAvatarUrl]);
+  }, [
+    todaySchedules,
+    allMembers,
+    memberMap,
+    formatTime,
+    toAvatarUrl,
+    getMemberDisplayName,
+  ]);
 
-  const handleMarkComplete = async (scheduleId) => {
-    try {
-      await markScheduleComplete(scheduleId);
-      // Refetch to ensure UI updates without reload
-      getTodaySchedules(user?._id);
-    } catch (error) {
-      console.error("Error marking schedule complete:", error);
-    }
-  };
+  const handleMarkComplete = useCallback(
+    async (scheduleId) => {
+      try {
+        await markScheduleComplete(scheduleId);
+        await getTodaySchedules(user?._id);
+      } catch (error) {
+        setError(error);
+        console.error("Error marking schedule complete:", error);
+      }
+    },
+    [markScheduleComplete, getTodaySchedules, user?._id]
+  );
 
-  // Enhanced students list from currentTrainer (assuming currentTrainer.students is an array of student objects)
+  // Enhanced students (limit if too many)
   const enhancedStudents = useMemo(() => {
     if (!currentTrainer?.students || currentTrainer.students.length === 0)
       return [];
-    return currentTrainer.students.map((student) => ({
+    // Limit to 50 for performance
+    const limitedStudents = currentTrainer.students.slice(0, 50);
+    return limitedStudents.map((student) => ({
       ...student,
       displayName: getMemberDisplayName(student),
       avatar:
@@ -236,66 +337,155 @@ export default function TrainerMainContent() {
           student.profileImage || student.avatar || student.userId?.profileImage
         ) || "/default-avatar.png",
     }));
-  }, [currentTrainer, toAvatarUrl]);
+  }, [currentTrainer, toAvatarUrl, getMemberDisplayName]);
 
-  // Status card data (passed to separate component)
-  const totalStudents = enhancedStudents.length;
-  const totalTemplates =
-    (workoutTemplates || []).length + (dietTemplates || []).length;
-  const todaySchedulesCount = enhancedTodaySchedules.length;
-  const activePlansCount = useMemo(() => {
-    // Assuming plans have a 'status' field where 'active' indicates active plans.
-    // Adjust the filter logic based on your plan schema (e.g., !plan.isCompleted || plan.status === 'active').
-    return (_trainerPlans || []).filter(
-      (plan) => plan.status === "active" || !plan.isCompleted
-    ).length;
-  }, [_trainerPlans]);
+  // Status data
+  const statusData = useMemo(
+    () => ({
+      totalStudents: enhancedStudents.length,
+      totalTemplates:
+        (workoutTemplates || []).length + (dietTemplates || []).length,
+      todaySchedulesCount: enhancedTodaySchedules.length,
+      activePlansCount: (_trainerPlans || []).filter(
+        (plan) => plan.status === "active" || !plan.isCompleted
+      ).length,
+    }),
+    [
+      enhancedStudents.length,
+      workoutTemplates,
+      dietTemplates,
+      enhancedTodaySchedules.length,
+      _trainerPlans,
+    ]
+  );
+
+  // Global loading
+  const isGlobalLoading = useMemo(
+    () => isLoadingSchedules || isLoadingTrainer || isRefreshing || !user?._id,
+    [isLoadingSchedules, isLoadingTrainer, isRefreshing, user?._id]
+  );
+
+  if (error && !isGlobalLoading) {
+    return <ErrorFallback error={error} onRetry={handleRefresh} />;
+  }
 
   return (
-    <main className="p-4 md:p-6 lg:p-8 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 min-h-screen">
-      {/* Status Cards Section - Using separate component */}
-      <StatusCards
-        totalStudents={totalStudents}
-        activePlansCount={activePlansCount}
-        totalTemplates={totalTemplates}
-        todaySchedulesCount={todaySchedulesCount}
-      />
+    <main className="p-4 md:p-6 lg:p-8 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 min-h-screen relative">
+      {/* Refresh Button */}
+      <button
+        onClick={handleRefresh}
+        disabled={isRefreshing}
+        className="fixed top-4 right-4 z-10 p-3 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
+        aria-label="Дахин ачаалах"
+      >
+        {isRefreshing ? (
+          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <RefreshCw className="w-5 h-5" />
+        )}
+      </button>
 
-      {/* Today's Schedule and Students Section - Grid layout for equal height */}
+      {/* Loading Overlay */}
+      {isGlobalLoading && (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-20">
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-500">Ачаалж байна...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Status Cards */}
+      <Suspense
+        fallback={<div className="h-24 bg-white rounded-lg animate-pulse" />}
+      >
+        <StatusCards {...statusData} />
+      </Suspense>
+
+      {/* Schedule and Students */}
       <div className="mb-8 grid grid-cols-1 min-h-90 lg:grid-cols-[1fr_355px] gap-6">
-        {/* Today's Schedule - Left side */}
         <div className="lg:col-span-1 h-full">
-          <TodaysSchedule
-            enhancedTodaySchedules={enhancedTodaySchedules}
-            isLoadingSchedules={isLoadingSchedules}
-            formatDate={formatDate}
-            getDefaultTimes={getDefaultTimes}
-            handleMarkComplete={handleMarkComplete}
-            user={user}
-          />
+          <Suspense
+            fallback={
+              <div className="h-64 bg-white rounded-lg animate-pulse" />
+            }
+          >
+            <TodaysSchedule
+              enhancedTodaySchedules={enhancedTodaySchedules}
+              isLoadingSchedules={isLoadingSchedules}
+              formatDate={formatDate}
+              getDefaultTimes={getDefaultTimes}
+              handleMarkComplete={handleMarkComplete}
+              user={user}
+            />
+          </Suspense>
         </div>
 
-        {/* Students Section - Right side */}
         <div className="lg:col-span-1 h-full">
-          <MyStudents
-            enhancedStudents={enhancedStudents}
-            isLoadingTrainer={isLoadingTrainer}
-          />
+          <Suspense
+            fallback={
+              <div className="h-64 bg-white rounded-lg animate-pulse" />
+            }
+          >
+            <MyStudents
+              enhancedStudents={enhancedStudents}
+              isLoadingTrainer={isLoadingTrainer}
+            />
+          </Suspense>
         </div>
       </div>
 
-      {/* Separated Templates Overview */}
-      <MyTemplates onViewTemplate={handleViewTemplate} />
+      {/* Aggregate Progress */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold mb-4 text-gray-800 flex items-center justify-between">
+          Нийт хэрэглэгчдийн ахиц
+          {isLoadingAggregate && (
+            <span className="text-sm text-gray-500">Шинэчлэгдэж байна...</span>
+          )}
+        </h2>
+        <Suspense
+          fallback={<div className="h-64 bg-white rounded-lg animate-pulse" />}
+        >
+          {isLoadingAggregate ? (
+            <div className="flex justify-center items-center h-64 bg-white rounded-lg shadow">
+              <p className="text-gray-500">Ачаалж байна...</p>
+            </div>
+          ) : aggregateMeasurement ? (
+            <OverallProgressChart
+              aggregateData={aggregateMeasurement}
+              selectedPeriod={selectedPeriod}
+              onPeriodChange={handlePeriodChange}
+            />
+          ) : (
+            <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+              Өгөгдөл байхгүй. Хэмжилт нэмнэ үү.
+            </div>
+          )}
+        </Suspense>
+      </div>
 
-      {/* Separated Plans Overview - New section */}
-      <MyPlans
-        plans={_trainerPlans}
-        currentTrainer={currentTrainer}
-        toAvatarUrl={toAvatarUrl}
-        onViewTemplate={handleViewTemplate} // delegate preview to parent modal
-      />
+      {/* Templates and Plans */}
+      <Suspense
+        fallback={
+          <div className="h-64 bg-white rounded-lg animate-pulse mb-8" />
+        }
+      >
+        <MyTemplates onViewTemplate={handleViewTemplate} />
+      </Suspense>
+      <Suspense
+        fallback={
+          <div className="h-64 bg-white rounded-lg animate-pulse mb-8" />
+        }
+      >
+        <MyPlans
+          plans={_trainerPlans}
+          currentTrainer={currentTrainer}
+          toAvatarUrl={toAvatarUrl}
+          onViewTemplate={handleViewTemplate}
+        />
+      </Suspense>
 
-      {/* Detail Modal for viewing template details */}
+      {/* Detail Modal */}
       <AnimatePresence>
         {previewOpen && previewData && (
           <DetailModal

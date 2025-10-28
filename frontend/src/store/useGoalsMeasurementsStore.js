@@ -84,6 +84,23 @@ export const useGoalsMeasurementsStore = create((set, get) => ({
     }
   },
 
+  getAggregateMeasurement: async (trainerId, period = "3months") => {
+    set({ isLoadingAggregate: true });
+    try {
+      const res = await axiosInstance.get(
+        `/trainers/getAggregatedMeasurements/${trainerId}?period=${period}`
+      );
+      const data = res.data?.data ?? res.data;
+      set({ aggregateMeasurement: data || null });
+      return data || null;
+    } catch (error) {
+      console.error("Error fetching aggregate measurement:", error);
+      return null;
+    } finally {
+      set({ isLoadingAggregate: false });
+    }
+  },
+
   addMeasurement: async (data) => {
     set({ isLoading: true });
     try {

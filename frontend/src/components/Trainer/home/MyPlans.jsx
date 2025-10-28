@@ -56,13 +56,13 @@ const MyPlansTable = ({
       member = memberIdOrObj;
     }
 
-    if (!member) return "Unassigned";
+    if (!member) return "Тодорхойлогдоогүй";
     return (
       member.username ||
       member.name ||
       member.userId?.username ||
       member._id?.slice(0, 8) ||
-      "Unassigned"
+      "Тодорхойлогдоогүй"
     );
   }, []);
 
@@ -97,6 +97,11 @@ const MyPlansTable = ({
   }, [plans, sortBy, currentTrainer, searchTerm, getMemberName]);
 
   const getStatusBadge = (status) => {
+    const statusMap = {
+      active: "Идэвхтэй",
+      pending: "Хүлээгдэж буй",
+      completed: "Дууссан",
+    };
     const badges = {
       active: {
         class:
@@ -121,7 +126,7 @@ const MyPlansTable = ({
         className={`inline-flex items-center px-3 py-1.5 rounded-sm text-xs font-semibold ${bgClass} shadow-md border backdrop-blur-sm`}
       >
         <Icon size={12} className="mr-1" />
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {statusMap[status] || "Хүлээгдэж буй"}
       </motion.span>
     );
   };
@@ -141,13 +146,13 @@ const MyPlansTable = ({
             <thead className="bg-cyan-400">
               <tr>
                 {[
-                  { key: "title", label: "Plan Title", sortable: true },
-                  { key: "memberName", label: "Member", sortable: true },
-                  { key: "startDate", label: "Started", sortable: true },
-                  { key: "endDate", label: "Ended", sortable: true },
-                  { key: "workouts", label: "Workouts" },
-                  { key: "diet", label: "Diet" },
-                  { key: "status", label: "Status", sortable: true },
+                  { key: "title", label: "Хөтөлбөрийн Нэр", sortable: true },
+                  { key: "memberName", label: "Гишүүн", sortable: true },
+                  { key: "startDate", label: "Эхэлсэн", sortable: true },
+                  { key: "endDate", label: "Дууссан", sortable: true },
+                  { key: "workouts", label: "Дасгалууд" },
+                  { key: "diet", label: "Хоолны Дэглэм" },
+                  { key: "status", label: "Төлөв", sortable: true },
                 ].map(({ key, label, sortable }) => (
                   <th
                     key={key}
@@ -311,7 +316,7 @@ const MyPlansTable = ({
                       <td className="px-6 py-4 text-center text-sm text-gray-600">
                         <div className="text-xs font-mono">
                           {new Date(plan.startDate).toLocaleDateString(
-                            "en-US",
+                            "mn-MN",
                             {
                               month: "short",
                               day: "numeric",
@@ -322,7 +327,7 @@ const MyPlansTable = ({
                       </td>
                       <td className="px-6 py-4 text-center text-sm text-gray-600">
                         <div className="text-xs font-mono">
-                          {new Date(plan.endDate).toLocaleDateString("en-US", {
+                          {new Date(plan.endDate).toLocaleDateString("mn-MN", {
                             month: "short",
                             day: "numeric",
                             year: "numeric",
@@ -367,7 +372,7 @@ const MyPlansTable = ({
               onClick={onViewAll}
               className="text-cyan-600 p-2 hover:bg-blue-600 rounded-lg hover:text-white text-md font-semibold transition-all duration-200 flex items-center gap-1 mx-auto group cursor-pointer"
             >
-              Go to Plans
+              Хөтөлбөр рүү очих
               <ArrowBigRight
                 size={16}
                 className="group-hover:ml-1 transition-all"
@@ -389,11 +394,11 @@ const MyPlansTable = ({
         >
           <CalendarX2 size={48} />
         </motion.div>
-        <h2 className="text-2xl font-bold mb-2">No Plans Found</h2>
+        <h2 className="text-2xl font-bold mb-2">Хөтөлбөр олдсонгүй</h2>
         <p className="text-sm mb-6">
           {searchTerm
-            ? "Try adjusting your search."
-            : "Create plans to manage your clients here."}
+            ? "Хайлтаа өөрчилж үзээрэй."
+            : "Эндээс хэрэглэгчээ удирдах хөтөлбөр үүсгэнэ үү."}
         </p>
         {searchTerm && (
           <motion.button
@@ -402,7 +407,7 @@ const MyPlansTable = ({
             onClick={() => setSearchTerm("")}
             className="flex items-center gap-2 text-cyan-600 hover:text-cyan-700 text-sm font-semibold transition-all duration-200 mx-auto bg-cyan-50/50 px-4 py-2 rounded-lg border border-cyan-200/50"
           >
-            <ClearIcon size={16} /> Reset Search
+            <ClearIcon size={16} /> Хайлтыг дахин тохируулах
           </motion.button>
         )}
       </motion.div>
@@ -419,7 +424,7 @@ const MyPlansTable = ({
           <SearchIcon size={20} className="text-gray-700 absolute left-4" />
           <input
             type="text"
-            placeholder="Search plans, members, or goals..."
+            placeholder="Хөтөлбөр, гишүүд, эсвэл зорилго хайх..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-12 bg-transparent outline-none text-sm placeholder-gray-500 font-medium"
@@ -430,7 +435,7 @@ const MyPlansTable = ({
               whileTap={{ scale: 0.9 }}
               onClick={() => setSearchTerm("")}
               className="absolute right-4 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200/50 transition-all duration-200"
-              title="Clear search"
+              title="Хайлтыг цэвэрлэх"
             >
               <ClearIcon size={18} />
             </motion.button>
@@ -481,7 +486,9 @@ const MyPlans = ({
           >
             <SquareChartGantt size={28} className="text-cyan-600" />
           </motion.div>
-          <h2 className="text-2xl text-gray-900 bg-clip-text">My Plans</h2>
+          <h2 className="text-2xl text-gray-900 bg-clip-text">
+            Миний Хөтөлбөрүүд
+          </h2>
         </div>
       </motion.div>
       <MyPlansTable

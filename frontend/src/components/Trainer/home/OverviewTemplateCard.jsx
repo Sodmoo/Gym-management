@@ -24,7 +24,7 @@ const OverviewTemplateCard = ({ t, type, onView }) => {
     : 0;
   const totalMeals = !isWorkout ? t.dailyMeals?.length || 0 : 0; // Assuming diet has dailyMeals
   const total = isWorkout ? totalExercises : totalMeals;
-  const totalLabel = isWorkout ? "Exercises" : "Meals";
+  const totalLabel = isWorkout ? "Дасгал" : "Хоол";
 
   // Duration
   const duration = isWorkout
@@ -39,7 +39,7 @@ const OverviewTemplateCard = ({ t, type, onView }) => {
     const updated = new Date(updatedDate);
     const diff = now.getTime() - updated.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    return days === 0 ? "Today" : `${days} days ago`;
+    return days === 0 ? "Өнөөдөр" : `${days} days ago`;
   }, [updatedDate]);
 
   return (
@@ -71,7 +71,7 @@ const OverviewTemplateCard = ({ t, type, onView }) => {
         </div>
         <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm rounded px-2 py-1">
           <span className="text-sm font-semibold text-gray-800 capitalize">
-            {type}
+            {type === "workout" ? "Дасгал" : "Хоол"}
           </span>
         </div>
       </div>
@@ -125,8 +125,8 @@ const OverviewTemplateCard = ({ t, type, onView }) => {
             onClick={() => onView(type, t)}
             className={
               isWorkout
-                ? "py-2.5 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-1 group-hover:shadow-md" // Fixed px-22 to px-4 and added text-white
-                : "py-2.5 px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors flex items-center gap-1 group-hover:shadow-md" // Fixed px-22 to px-4 and added text-white
+                ? "py-2.5 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors flex items-center gap-1 group-hover:shadow-md"
+                : "py-2.5 px-4 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors flex items-center gap-1 group-hover:shadow-md"
             }
             aria-label="View template details"
           >

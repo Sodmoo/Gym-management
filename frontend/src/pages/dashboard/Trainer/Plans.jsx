@@ -98,19 +98,19 @@ const PlanCard = memo(
             <span
               className={`px-3 py-1 text-xs text-white font-semibold rounded-full shadow ${statusClass}`}
             >
-              {isActive ? "Active" : "Completed"}
+              {isActive ? "Идэвхтэй" : "Дууссан"}
             </span>
             <button
               onClick={() => onEdit(p)}
               className="p-2 text-yellow-600 hover:bg-yellow-100 rounded-full transition"
-              title="Edit"
+              title="Засах"
             >
               <Edit size={16} />
             </button>
             <button
               onClick={() => onDelete(p._id)}
               className="p-2 text-red-600 hover:bg-red-100 rounded-full transition"
-              title="Delete"
+              title="Устгах"
             >
               <Trash2 size={16} />
             </button>
@@ -120,8 +120,8 @@ const PlanCard = memo(
         <div className="flex items-center gap-3 mb-3 text-gray-600">
           <Clock size={14} />
           <span className="text-sm">
-            {new Date(p.startDate).toLocaleDateString()} →{" "}
-            {new Date(p.endDate).toLocaleDateString()}
+            {new Date(p.startDate).toLocaleDateString("mn-MN")} →{" "}
+            {new Date(p.endDate).toLocaleDateString("mn-MN")}
           </span>
         </div>
 
@@ -131,10 +131,10 @@ const PlanCard = memo(
             className="flex items-center justify-between px-4 py-2 bg-cyan-50 hover:bg-cyan-100 rounded-xl border border-cyan-200 transition-all cursor-pointer"
           >
             <span className="flex items-center gap-2 text-cyan-700 font-semibold">
-              <Dumbbell size={16} /> Workout Plan
+              <Dumbbell size={16} /> Дасгал
             </span>
             <span className="text-xs text-gray-500">
-              {p.workoutTemplate?.program?.length || 0} days
+              {p.workoutTemplate?.program?.length || 0} өдөр
             </span>
           </button>
           <button
@@ -142,10 +142,10 @@ const PlanCard = memo(
             className="flex items-center justify-between px-4 py-2 bg-teal-50 hover:bg-teal-100 rounded-xl border border-teal-200 transition-all cursor-pointer"
           >
             <span className="flex items-center gap-2 text-teal-700 font-semibold">
-              <Utensils size={16} /> Diet Plan
+              <Utensils size={16} /> Хоол
             </span>
             <span className="text-xs text-gray-500">
-              {p.dietTemplate?.dailyMeals?.length || 0} meals
+              {p.dietTemplate?.dailyMeals?.length || 0} хоол
             </span>
           </button>
           <button
@@ -153,13 +153,13 @@ const PlanCard = memo(
             className="flex items-center justify-between px-4 py-2 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition-all cursor-pointer"
           >
             <span className="flex items-center gap-2 text-blue-700 font-semibold">
-              <User size={16} /> Assigned Member
+              <User size={16} /> Гишүүн
             </span>
             <span className="text-xs text-gray-500">
               {memberDetails?.username ||
                 p.memberId?.username ||
                 p.memberId?.userId?.username ||
-                "No member"}
+                "Гишүүн байхгүй"}
             </span>
           </button>
         </div>
@@ -249,7 +249,7 @@ const PlanT = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this plan?")) return;
+    if (!window.confirm("Энэ хөтөлбөрийг устгахдаа итгэлтэй байна уу?")) return;
     await deletePlan(id);
     setLocalPlans(localPlans.filter((p) => p._id !== id));
   };
@@ -281,7 +281,7 @@ const PlanT = () => {
       if (user?._id) {
         await getPlans(user._id);
       }
-      alert("Update failed, changes reverted.");
+      alert("Шинэчлэх алдаа гарлаа, өөрчлөлтүүд буцаагдлаа.");
     }
   };
 
@@ -302,7 +302,7 @@ const PlanT = () => {
       }
     } catch (err) {
       console.error("Create failed:", err);
-      alert("Create failed, please try again.");
+      alert("Үүсгэх алдаа гарлаа, дахин оролдоно уу.");
     }
   };
 
@@ -311,14 +311,14 @@ const PlanT = () => {
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center gap-3">
           <SquareChartGantt size={28} className="text-cyan-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Training Plans</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Хөтөлбөрүүд</h1>
         </div>
         <button
           onClick={() => setIsCreateModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
         >
           <Plus size={20} />
-          Add Plan
+          Хөтөлбөр нэмэх
         </button>
       </div>
 
@@ -330,7 +330,7 @@ const PlanT = () => {
           >
             <SquareChartGantt className="mx-auto mb-3 opacity-60" size={32} />
           </motion.div>
-          <p className="text-sm">Loading Plans...</p>
+          <p className="text-sm">Хөтөлбөр ачаалж байна...</p>
         </div>
       ) : currentPlans.length ? (
         <>
@@ -368,7 +368,7 @@ const PlanT = () => {
                 disabled={currentPage === 1}
                 className="px-4 py-2 bg-cyan-600 text-white rounded-lg disabled:bg-gray-300"
               >
-                Prev
+                Өмнөх
               </button>
               <span className="text-gray-700 font-medium">
                 {currentPage} / {totalPages}
@@ -380,7 +380,7 @@ const PlanT = () => {
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 bg-cyan-600 text-white rounded-lg disabled:bg-gray-300"
               >
-                Next
+                Дараах
               </button>
             </div>
           )}
@@ -388,8 +388,8 @@ const PlanT = () => {
       ) : (
         <div className="text-center py-12 text-gray-400">
           <Calendar className="mx-auto mb-3 opacity-60" size={32} />
-          <p className="text-sm font-medium">No plans yet.</p>
-          <p className="text-xs mt-1">Create one to get started!</p>
+          <p className="text-sm font-medium">Одоогоор хөтөлбөр байхгүй.</p>
+          <p className="text-xs mt-1">Эхлэхийн тулд нэг үүсгэнэ үү!</p>
         </div>
       )}
 

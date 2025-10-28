@@ -15,7 +15,9 @@ const MyStudents = ({ enhancedStudents, isLoadingTrainer }) => {
       <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-full flex flex-col justify-center">
         <div className="flex items-center justify-center">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-          <p className="ml-2 text-sm text-gray-500">Loading students...</p>
+          <p className="ml-2 text-sm text-gray-500">
+            Суралцагчдыг ачаалж байна...
+          </p>
         </div>
       </section>
     );
@@ -26,10 +28,10 @@ const MyStudents = ({ enhancedStudents, isLoadingTrainer }) => {
       <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-full flex flex-col justify-center">
         <div className="text-center text-gray-400">
           <Users className="mx-auto mb-3 opacity-60" size={32} />
-          <p className="text-sm font-medium">No students assigned yet.</p>
-          <p className="text-xs mt-1">
-            Assign students in the Members section!
+          <p className="text-sm font-medium">
+            Одоогоор суралцагч хуваарилагдаагүй.
           </p>
+          <p className="text-xs mt-1">Гишүүдийн хэсэгт суралцагч хуваарилах!</p>
         </div>
       </section>
     );
@@ -42,11 +44,11 @@ const MyStudents = ({ enhancedStudents, isLoadingTrainer }) => {
           <div className="w-12 h-12 bg-cyan-100 rounded-xl flex items-center justify-center backdrop-blur-sm">
             <Users className="text-indigo-600 w-6 h-6" />
           </div>
-          <h3 className="text-xl font-bold mt-2">My Students</h3>
+          <h3 className="text-xl font-bold mt-2">Хэрэглэгчид</h3>
         </div>
 
         <span className="text-sm text-cyan-600 bg-gray-100 px-3 py-2 rounded-full">
-          Total {enhancedStudents.length}
+          Нийт {enhancedStudents.length}
         </span>
       </div>
 
@@ -67,7 +69,7 @@ const MyStudents = ({ enhancedStudents, isLoadingTrainer }) => {
                   {student.displayName}
                 </p>
                 <p className="text-sm text-gray-500 truncate">
-                  {student.email || student.userId?.email || "No email"}
+                  {student.email || student.userId?.email || "И-мэйл байхгүй"}
                 </p>
               </div>
               <div className="flex items-center gap-1 cursor-pointer ">
@@ -87,8 +89,8 @@ const MyStudents = ({ enhancedStudents, isLoadingTrainer }) => {
               }`}
             >
               {expanded
-                ? "Show Less"
-                : `View More (+${enhancedStudents.length - maxVisible})`}
+                ? "Багасгах"
+                : `Илүү их харах (+${enhancedStudents.length - maxVisible})`}
             </button>
           </div>
         )}

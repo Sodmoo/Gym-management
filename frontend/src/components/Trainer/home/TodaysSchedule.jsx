@@ -28,6 +28,14 @@ const TodaysSchedule = ({
     : enhancedTodaySchedules.slice(0, maxVisible);
   const hasMore = enhancedTodaySchedules.length > maxVisible;
 
+  // Translation map for schedule types
+  const typeTranslations = {
+    workout: "Дасгал",
+    meeting: "Уулзалт",
+    measurement: "Хэмжилт",
+    // Add more types as needed
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1 },
@@ -53,7 +61,7 @@ const TodaysSchedule = ({
           <Calendar className="w-full h-full" />
         </motion.div>
         <p className="text-lg font-medium text-gray-900">
-          Loading today's schedule...
+          Өнөөдрийн хуваарийг ачаалж байна...
         </p>
       </div>
     </div>
@@ -66,11 +74,11 @@ const TodaysSchedule = ({
           <Calendar className="w-12 h-12 text-blue-600" />
         </div>
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
-          No appointments today
+          Өнөөдөр цаг авахгүй байна
         </h3>
         <p className="text-gray-600 mb-6 max-w-sm mx-auto">
-          Your schedule is clear. Take this time to plan new sessions or review
-          your templates.
+          Таны хуваарь цэвэр байна. Энэ цагийг ашиглан шинэ сургалт төлөвлөх
+          эсвэл загваруудаа шалгах.
         </p>
       </div>
     </div>
@@ -86,21 +94,19 @@ const TodaysSchedule = ({
               <ClipboardClock className="w-6 h-6 text-blue-800" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold">Today's Schedule</h2>
+              <h2 className="text-2xl font-bold">Өнөөдрийн хуваарь</h2>
               <p className="text-gray-800 text-sm opacity-90">
                 {formatDate(new Date(), "EEE, MMM do, yyyy")} •{" "}
                 {enhancedTodaySchedules.length}{" "}
-                {enhancedTodaySchedules.length === 1
-                  ? "appointment"
-                  : "appointments"}
+                {enhancedTodaySchedules.length === 1 ? "цаг авах" : "цаг авах"}
               </p>
             </div>
           </div>
           <button
-            onClick={() => console.log("Navigate to full SchedulesPage")} // Replace with actual navigation, e.g., useRouter
+            onClick={() => console.log("Бүх хуваарийн хуудас руу шилжих")} // Replace with actual navigation, e.g., useRouter
             className="flex items-center gap-2 px-4 py-2 hover:bg-white/80 rounded-md text-gray-700 transition-all backdrop-blur-sm font-medium text-sm cursor-pointer"
           >
-            <Calendar className="w-5 h-5 " /> View Full Schedule
+            <Calendar className="w-5 h-5 " /> Бүх хуваарийг харах
           </button>
         </div>
       </div>
@@ -130,6 +136,10 @@ const TodaysSchedule = ({
                 ? Ruler
                 : Plus;
 
+            const translatedType =
+              typeTranslations[schedule.type] ||
+              schedule.type?.charAt(0).toUpperCase() + schedule.type?.slice(1);
+
             return (
               <motion.div
                 key={schedule._id}
@@ -157,8 +167,7 @@ const TodaysSchedule = ({
                         {schedule.memberName}
                       </h3>
                       <p className="text-sm text-gray-600 mb-3 truncate">
-                        {schedule.type?.charAt(0).toUpperCase() +
-                          schedule.type?.slice(1)}
+                        {translatedType}
                       </p>
                     </div>
                   </div>
@@ -180,7 +189,7 @@ const TodaysSchedule = ({
                       <button
                         onClick={() => handleMarkComplete(schedule._id)}
                         className="p-2.5 bg-green-100 hover:bg-green-200 rounded-lg text-green-700 transition-all"
-                        title="Mark as complete"
+                        title="Дууссан гэж тэмдэглэх"
                       >
                         <Check className="w-4 h-4" />
                       </button>
@@ -202,8 +211,10 @@ const TodaysSchedule = ({
               }`}
             >
               {expanded
-                ? "Show Less"
-                : `View More (+${enhancedTodaySchedules.length - maxVisible})`}
+                ? "Багасгах"
+                : `Илүү их харах (+${
+                    enhancedTodaySchedules.length - maxVisible
+                  })`}
             </button>
           </div>
         )}
