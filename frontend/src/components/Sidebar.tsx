@@ -88,6 +88,11 @@ const Sidebar = () => {
         label: "Schedule",
         icon: <ClipboardClock size={18} />,
       },
+      {
+        path: "/trainer/chat",
+        label: "Chat",
+        icon: <ClipboardClock size={18} />,
+      },
     ],
     user: [
       {

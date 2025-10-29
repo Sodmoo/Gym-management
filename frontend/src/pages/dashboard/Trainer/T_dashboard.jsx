@@ -86,7 +86,7 @@ export default function TrainerMainContent() {
     getAggregateMeasurement,
     isLoading: isLoadingAggregate,
   } = useGoalsMeasurementsStore();
-
+  console.log(currentTrainer);
   // Consolidated fetch with timeout and better error handling
   const fetchAllData = useCallback(
     async (trainerId, period) => {
